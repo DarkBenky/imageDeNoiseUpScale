@@ -19,14 +19,12 @@ IMAGE_HEIGHT_LOW_RES = 600
 IMAGE_WIDTH_HIGH_RES = int(800 * 1.5)
 IMAGE_HEIGHT_HIGH_RES = int(600 * 1.5)
 
-# Concurrent download settings
 MAX_CONCURRENT_DOWNLOADS = 64
 DOWNLOAD_TIMEOUT = 5
 
 MAX_NOISE_APPLICATIONS = 5
 
 NOISE_CONFIGS = [
-    # Gaussian noise - various intensities (increased levels)
     {"type": "gaussian", "intensity": "very_low", "whole_image": True, "sigma": 0.02},
     {"type": "gaussian", "intensity": "low", "whole_image": True, "sigma": 0.04},
     {"type": "gaussian", "intensity": "medium", "whole_image": True, "sigma": 0.08},
@@ -37,7 +35,6 @@ NOISE_CONFIGS = [
     {"type": "gaussian", "intensity": "high_localized", "whole_image": False, "sigma": 0.25, "coverage": 0.3},
     {"type": "gaussian", "intensity": "extreme_localized", "whole_image": False, "sigma": 0.5, "coverage": 0.2},
     
-    # Salt & Pepper noise (increased levels)
     {"type": "salt_pepper", "intensity": "very_low", "whole_image": True, "amount": 0.02},
     {"type": "salt_pepper", "intensity": "low", "whole_image": True, "amount": 0.05},
     {"type": "salt_pepper", "intensity": "medium", "whole_image": True, "amount": 0.1},
@@ -47,7 +44,6 @@ NOISE_CONFIGS = [
     {"type": "salt_pepper", "intensity": "high_localized", "whole_image": False, "amount": 0.25, "coverage": 0.2},
     {"type": "salt_pepper", "intensity": "extreme_localized", "whole_image": False, "amount": 0.5, "coverage": 0.15},
     
-    # Speckle noise (multiplicative) (increased levels)
     {"type": "speckle", "intensity": "very_low", "whole_image": True, "sigma": 0.05},
     {"type": "speckle", "intensity": "low", "whole_image": True, "sigma": 0.1},
     {"type": "speckle", "intensity": "medium", "whole_image": True, "sigma": 0.2},
@@ -57,7 +53,6 @@ NOISE_CONFIGS = [
     {"type": "speckle", "intensity": "high_localized", "whole_image": False, "sigma": 0.35, "coverage": 0.25},
     {"type": "speckle", "intensity": "extreme_localized", "whole_image": False, "sigma": 0.5, "coverage": 0.2},
     
-    # Poisson noise (various scaling levels)
     {"type": "poisson", "intensity": "very_low", "whole_image": True, "scale": 1.0},
     {"type": "poisson", "intensity": "low", "whole_image": True, "scale": 0.8},
     {"type": "poisson", "intensity": "medium", "whole_image": True, "scale": 0.6},
@@ -67,7 +62,6 @@ NOISE_CONFIGS = [
     {"type": "poisson", "intensity": "low_localized", "whole_image": False, "scale": 0.6, "coverage": 0.3},
     {"type": "poisson", "intensity": "high_localized", "whole_image": False, "scale": 0.3, "coverage": 0.2},
     
-    # Combined noise types (multi-application) (increased levels)
     {"type": "gaussian", "intensity": "combined_low", "whole_image": True, "sigma": 0.05, "multi_apply": True, "applications": 2},
     {"type": "gaussian", "intensity": "combined_medium", "whole_image": True, "sigma": 0.08, "multi_apply": True, "applications": 3},
     {"type": "gaussian", "intensity": "combined_high", "whole_image": True, "sigma": 0.1, "multi_apply": True, "applications": 4},
@@ -78,7 +72,6 @@ NOISE_CONFIGS = [
     {"type": "poisson", "intensity": "combined_medium", "whole_image": True, "scale": 0.5, "multi_apply": True, "applications": 2},
     {"type": "poisson", "intensity": "combined_high", "whole_image": True, "scale": 0.3, "multi_apply": True, "applications": 3},
 
-    # Hybrid combinations - whole image + localized (same noise type)
     {"type": "hybrid", "base_noise": "gaussian", "intensity": "whole_plus_local_low", "whole_sigma": 0.03, "local_sigma": 0.15, "coverage": 0.25},
     {"type": "hybrid", "base_noise": "gaussian", "intensity": "whole_plus_local_medium", "whole_sigma": 0.05, "local_sigma": 0.25, "coverage": 0.3},
     {"type": "hybrid", "base_noise": "gaussian", "intensity": "whole_plus_local_high", "whole_sigma": 0.08, "local_sigma": 0.4, "coverage": 0.2},
@@ -106,7 +99,6 @@ def add_gaussian_noise(image, sigma, whole_image=True, coverage=1.0):
         noise = np.random.normal(0, sigma, image.shape)
         noisy += noise
     else:
-        # Apply to random region
         h, w = image.shape[:2]
         region_h, region_w = int(h * np.sqrt(coverage)), int(w * np.sqrt(coverage))
         y = np.random.randint(0, max(1, h - region_h))
@@ -123,10 +115,9 @@ def add_salt_pepper_noise(image, amount, whole_image=True, coverage=1.0):
     
     if whole_image:
         mask = np.random.choice([0, 1, 2], size=image.shape[:2], p=[1-amount, amount/2, amount/2])
-        noisy[mask == 1] = 255  # Salt
-        noisy[mask == 2] = 0    # Pepper
+        noisy[mask == 1] = 255
+        noisy[mask == 2] = 0
     else:
-        # Apply to random region
         h, w = image.shape[:2]
         region_h, region_w = int(h * np.sqrt(coverage)), int(w * np.sqrt(coverage))
         y = np.random.randint(0, max(1, h - region_h))
@@ -168,11 +159,9 @@ def add_poisson_noise(image, whole_image=True, scale=1.0, coverage=1.0):
     noisy = image.copy().astype(np.float32)
     
     if whole_image:
-        # Scale down, apply Poisson, scale back up
         scaled = noisy * scale
         noisy = np.random.poisson(scaled) / scale
     else:
-        # Apply to random region
         h, w = image.shape[:2]
         region_h, region_w = int(h * np.sqrt(coverage)), int(w * np.sqrt(coverage))
         y = np.random.randint(0, max(1, h - region_h))
@@ -196,19 +185,15 @@ def apply_noise(image, config, num_applications=1):
     whole_image = config.get("whole_image", True)
     coverage = config.get("coverage", 1.0)
     
-    # Check if this config specifies multi-application
     if config.get("multi_apply", False):
         num_applications = config.get("applications", num_applications)
     
-    # Handle hybrid noise (whole image + localized)
     if noise_type == "hybrid":
         base_noise = config["base_noise"]
         noisy = image.copy()
         
-        # Apply noise to whole image first
         if base_noise == "gaussian":
             noisy = add_gaussian_noise(noisy, config["whole_sigma"], whole_image=True)
-            # Then apply more aggressive noise to localized region
             noisy = add_gaussian_noise(noisy, config["local_sigma"], whole_image=False, coverage=coverage)
         elif base_noise == "salt_pepper":
             noisy = add_salt_pepper_noise(noisy, config["whole_amount"], whole_image=True)
@@ -222,7 +207,6 @@ def apply_noise(image, config, num_applications=1):
         
         return noisy
     
-    # Apply noise multiple times for layered/combined effect
     noisy = image.copy()
     for _ in range(num_applications):
         if noise_type == "gaussian":
@@ -251,54 +235,40 @@ def crop_center(image, target_width, target_height):
 def process_image(image_data, image_index):
     """Process a single image: crop, save high-res, create and save low-res with noise"""
     try:
-        # Load image from bytes
         image = Image.open(BytesIO(image_data)).convert('RGB')
         width, height = image.size
         
-        # Check if image is large enough for cropping
         if width < IMAGE_WIDTH_HIGH_RES or height < IMAGE_HEIGHT_HIGH_RES:
             return False
         
-        # If image is exactly the target size, discard it
         if width == IMAGE_WIDTH_HIGH_RES and height == IMAGE_HEIGHT_HIGH_RES:
             return False
         
-        # Crop to high-res size
         high_res = crop_center(image, IMAGE_WIDTH_HIGH_RES, IMAGE_HEIGHT_HIGH_RES)
         
-        # Create folder for this image pair
         image_folder = Path(SAVE_PATH) / f"image_{image_index:08d}"
         image_folder.mkdir(parents=True, exist_ok=True)
         
-        # Save high-res image
         high_res_path = image_folder / "high_res.png"
         high_res.save(high_res_path, quality=95)
         
-        # Downscale to low-res
         low_res = high_res.resize((IMAGE_WIDTH_LOW_RES, IMAGE_HEIGHT_LOW_RES), Image.Resampling.LANCZOS)
         
-        # Convert to numpy for noise addition
         low_res_np = np.array(low_res)
         
-        # Select random noise configuration
         noise_config = random.choice(NOISE_CONFIGS)
         
-        # Determine number of noise applications (random between 1 and MAX_NOISE_APPLICATIONS)
-        # If config already specifies applications, that takes precedence
         if not noise_config.get("multi_apply", False):
             num_applications = random.randint(1, MAX_NOISE_APPLICATIONS)
         else:
-            num_applications = 1  # Will use config's specified applications
+            num_applications = 1
         
-        # Apply noise
         noisy_low_res = apply_noise(low_res_np, noise_config, num_applications)
         
-        # Save low-res noisy image
         low_res_noisy = Image.fromarray(noisy_low_res)
         low_res_path = image_folder / "low_res.png"
         low_res_noisy.save(low_res_path, quality=95)
         
-        # Save metadata about noise used
         metadata = {
             "noise_config": noise_config,
             "num_applications": num_applications if not noise_config.get("multi_apply", False) else noise_config.get("applications", 1),
@@ -362,12 +332,9 @@ async def process_dataset():
         batch.append(item)
         batch_urls.append(item["URL"])
         
-        # Process in batches
         if len(batch) >= MAX_CONCURRENT_DOWNLOADS:
-            # Download batch asynchronously
             image_data_list = await download_batch(batch_urls)
             
-            # Process each downloaded image
             for image_data in image_data_list:
                 if image_data:
                     success = process_image(image_data, current_index)
@@ -377,16 +344,13 @@ async def process_dataset():
                 
                 current_index += 1
                 
-                # Save progress periodically
                 if current_index % SAVE_PERIOD == 0:
                     save_index(current_index)
                     print(f"Progress saved at index {current_index}")
             
-            # Clear batch
             batch = []
             batch_urls = []
     
-    # Process remaining items in batch
     if batch:
         image_data_list = await download_batch(batch_urls)
         for image_data in image_data_list:
@@ -397,7 +361,6 @@ async def process_dataset():
                     print(f"Processed image {current_index} (total successful: {processed_count})")
             current_index += 1
     
-    # Final save
     save_index(current_index)
     print(f"Processing complete! Total images processed: {processed_count}")
 
@@ -416,11 +379,9 @@ class ImageDenoiseDataset(Dataset):
         self.transform = transform
         self.load_metadata = load_metadata
         
-        # Find all image folders
         self.image_folders = sorted([d for d in self.data_path.iterdir() 
                                      if d.is_dir() and d.name.startswith('image_')])
         
-        # Filter out folders that don't have both high_res and low_res images
         self.valid_folders = []
         for folder in self.image_folders:
             high_res_path = folder / "high_res.png"
@@ -442,19 +403,16 @@ class ImageDenoiseDataset(Dataset):
         """
         folder = self.valid_folders[idx]
         
-        # Load images
         high_res_path = folder / "high_res.png"
         low_res_path = folder / "low_res.png"
         
         high_res = Image.open(high_res_path).convert('RGB')
         low_res = Image.open(low_res_path).convert('RGB')
         
-        # Apply transforms if provided
         if self.transform:
             high_res = self.transform(high_res)
             low_res = self.transform(low_res)
         else:
-            # Default: convert to tensor and normalize to [0, 1]
             to_tensor = transforms.ToTensor()
             high_res = to_tensor(high_res)
             low_res = to_tensor(low_res)
@@ -488,10 +446,8 @@ def create_data_loaders(data_path, batch_size=16, train_split=0.9, num_workers=4
         train_loader: DataLoader for training
         val_loader: DataLoader for validation
     """
-    # Create full dataset
     full_dataset = ImageDenoiseDataset(data_path, transform=transform)
     
-    # Split into train and validation
     dataset_size = len(full_dataset)
     train_size = int(train_split * dataset_size)
     val_size = dataset_size - train_size
@@ -500,13 +456,12 @@ def create_data_loaders(data_path, batch_size=16, train_split=0.9, num_workers=4
         full_dataset, [train_size, val_size]
     )
     
-    # Create data loaders
     train_loader = DataLoader(
         train_dataset,
         batch_size=batch_size,
         shuffle=shuffle,
         num_workers=num_workers,
-        pin_memory=True  # Faster data transfer to GPU
+        pin_memory=True
     )
     
     val_loader = DataLoader(
