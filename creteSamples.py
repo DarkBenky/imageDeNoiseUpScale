@@ -11,6 +11,8 @@ import random
 import torch
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+import multiprocessing
 
 SAVE_PATH = "/media/user/f7a503ec-b25c-41a5-9baa-d350714f613a/imageData"
 SAVE_PERIOD = 256
@@ -19,8 +21,9 @@ IMAGE_HEIGHT_LOW_RES = 600
 IMAGE_WIDTH_HIGH_RES = int(800 * 1.5)
 IMAGE_HEIGHT_HIGH_RES = int(600 * 1.5)
 
-MAX_CONCURRENT_DOWNLOADS = 64
-DOWNLOAD_TIMEOUT = 5
+MAX_CONCURRENT_DOWNLOADS = 256
+DOWNLOAD_TIMEOUT = 3
+MAX_PROCESSING_WORKERS = multiprocessing.cpu_count() * 2
 
 MAX_NOISE_APPLICATIONS = 5
 
@@ -232,8 +235,8 @@ def crop_center(image, target_width, target_height):
     return image.crop((left, top, right, bottom))
 
 
-def process_image(image_data, image_index):
-    """Process a single image: crop, save high-res, create and save low-res with noise"""
+def process_image_sync(image_data, image_index, save_path, configs):
+    """Process a single image synchronously (for parallel execution)"""
     try:
         image = Image.open(BytesIO(image_data)).convert('RGB')
         width, height = image.size
@@ -246,17 +249,17 @@ def process_image(image_data, image_index):
         
         high_res = crop_center(image, IMAGE_WIDTH_HIGH_RES, IMAGE_HEIGHT_HIGH_RES)
         
-        image_folder = Path(SAVE_PATH) / f"image_{image_index:08d}"
+        image_folder = Path(save_path) / f"image_{image_index:08d}"
         image_folder.mkdir(parents=True, exist_ok=True)
         
         high_res_path = image_folder / "high_res.png"
-        high_res.save(high_res_path, quality=95)
+        high_res.save(high_res_path, quality=95, compress_level=1)
         
         low_res = high_res.resize((IMAGE_WIDTH_LOW_RES, IMAGE_HEIGHT_LOW_RES), Image.Resampling.LANCZOS)
         
         low_res_np = np.array(low_res)
         
-        noise_config = random.choice(NOISE_CONFIGS)
+        noise_config = random.choice(configs)
         
         if not noise_config.get("multi_apply", False):
             num_applications = random.randint(1, MAX_NOISE_APPLICATIONS)
@@ -267,7 +270,7 @@ def process_image(image_data, image_index):
         
         low_res_noisy = Image.fromarray(noisy_low_res)
         low_res_path = image_folder / "low_res.png"
-        low_res_noisy.save(low_res_path, quality=95)
+        low_res_noisy.save(low_res_path, quality=95, compress_level=1)
         
         metadata = {
             "noise_config": noise_config,
@@ -277,33 +280,47 @@ def process_image(image_data, image_index):
         }
         metadata_path = image_folder / "metadata.json"
         with open(metadata_path, 'w') as f:
-            json.dump(metadata, f, indent=2)
+            json.dump(metadata, f)
         
         return True
         
     except Exception as e:
-        print(f"Error processing image {image_index}: {e}")
         return False
+
+
+async def process_image(image_data, image_index, executor):
+    """Process image asynchronously using executor"""
+    if image_data is None:
+        return False
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(
+        executor, 
+        process_image_sync, 
+        image_data, 
+        image_index, 
+        SAVE_PATH, 
+        NOISE_CONFIGS
+    )
 
 
 async def download_image(session, url, semaphore):
     """Download a single image asynchronously"""
     async with semaphore:
         try:
-            async with session.get(url, timeout=aiohttp.ClientTimeout(total=DOWNLOAD_TIMEOUT)) as response:
+            async with session.get(url, timeout=aiohttp.ClientTimeout(total=DOWNLOAD_TIMEOUT), ssl=False) as response:
                 if response.status == 200:
                     return await response.read()
                 else:
                     return None
-        except Exception as e:
-            print(f"Download error for {url}: {e}")
+        except:
             return None
 
 
 async def download_batch(urls):
     """Download multiple images concurrently"""
     semaphore = asyncio.Semaphore(MAX_CONCURRENT_DOWNLOADS)
-    async with aiohttp.ClientSession() as session:
+    connector = aiohttp.TCPConnector(limit=0, ttl_dns_cache=300, ssl=False)
+    async with aiohttp.ClientSession(connector=connector) as session:
         tasks = [download_image(session, url, semaphore) for url in urls]
         return await asyncio.gather(*tasks)
 
@@ -315,54 +332,54 @@ def save_index(index):
 
 
 async def process_dataset():
-    """Main processing function with async downloads"""
+    """Main processing function with parallel async downloads and processing"""
     current_index = json.load(open("imageIndex.json"))["image_index"]
     ds = load_dataset("laion/relaion-high-resolution", split="train", streaming=True)
     
-    # Create save directory
     Path(SAVE_PATH).mkdir(parents=True, exist_ok=True)
     
-    batch = []
     batch_urls = []
+    batch_indices = []
     processed_count = 0
     
     print(f"Starting from index {current_index}")
+    print(f"Using {MAX_PROCESSING_WORKERS} workers for parallel processing")
     
-    for item in iter(ds):
-        batch.append(item)
-        batch_urls.append(item["URL"])
-        
-        if len(batch) >= MAX_CONCURRENT_DOWNLOADS:
-            image_data_list = await download_batch(batch_urls)
+    with ThreadPoolExecutor(max_workers=MAX_PROCESSING_WORKERS) as executor:
+        for item in iter(ds):
+            batch_urls.append(item["URL"])
+            batch_indices.append(current_index)
+            current_index += 1
             
-            for image_data in image_data_list:
-                if image_data:
-                    success = process_image(image_data, current_index)
-                    if success:
-                        processed_count += 1
-                        print(f"Processed image {current_index} (total successful: {processed_count})")
+            if len(batch_urls) >= MAX_CONCURRENT_DOWNLOADS:
+                image_data_list = await download_batch(batch_urls)
                 
-                current_index += 1
+                tasks = [
+                    process_image(image_data, idx, executor)
+                    for image_data, idx in zip(image_data_list, batch_indices)
+                ]
+                results = await asyncio.gather(*tasks)
+                
+                processed_count += sum(results)
                 
                 if current_index % SAVE_PERIOD == 0:
                     save_index(current_index)
-                    print(f"Progress saved at index {current_index}")
-            
-            batch = []
-            batch_urls = []
-    
-    if batch:
-        image_data_list = await download_batch(batch_urls)
-        for image_data in image_data_list:
-            if image_data:
-                success = process_image(image_data, current_index)
-                if success:
-                    processed_count += 1
-                    print(f"Processed image {current_index} (total successful: {processed_count})")
-            current_index += 1
+                    print(f"Progress: {current_index} downloaded, {processed_count} processed successfully")
+                
+                batch_urls = []
+                batch_indices = []
+        
+        if batch_urls:
+            image_data_list = await download_batch(batch_urls)
+            tasks = [
+                process_image(image_data, idx, executor)
+                for image_data, idx in zip(image_data_list, batch_indices)
+            ]
+            results = await asyncio.gather(*tasks)
+            processed_count += sum(results)
     
     save_index(current_index)
-    print(f"Processing complete! Total images processed: {processed_count}")
+    print(f"Processing complete! Total: {current_index} downloaded, {processed_count} processed successfully")
 
 
 class ImageDenoiseDataset(Dataset):
