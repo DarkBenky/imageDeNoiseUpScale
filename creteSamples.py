@@ -27,70 +27,40 @@ MAX_PROCESSING_WORKERS = multiprocessing.cpu_count() * 2
 
 MAX_NOISE_APPLICATIONS = 5
 
-NOISE_CONFIGS = [
-    {"type": "gaussian", "intensity": "very_low", "whole_image": True, "sigma": 0.02},
-    {"type": "gaussian", "intensity": "low", "whole_image": True, "sigma": 0.04},
-    {"type": "gaussian", "intensity": "medium", "whole_image": True, "sigma": 0.08},
-    {"type": "gaussian", "intensity": "high", "whole_image": True, "sigma": 0.15},
-    {"type": "gaussian", "intensity": "very_high", "whole_image": True, "sigma": 0.25},
-    {"type": "gaussian", "intensity": "extreme", "whole_image": True, "sigma": 0.4},
-    {"type": "gaussian", "intensity": "ultra_extreme", "whole_image": True, "sigma": 0.6},
-    {"type": "gaussian", "intensity": "high_localized", "whole_image": False, "sigma": 0.25, "coverage": 0.3},
-    {"type": "gaussian", "intensity": "extreme_localized", "whole_image": False, "sigma": 0.5, "coverage": 0.2},
+# Ray tracing noise configurations
+# Ray tracing primarily produces Poisson noise from Monte Carlo sampling
+# with varying intensity across the image (some regions need more samples)
+RAY_TRACING_NOISE_CONFIGS = [
+    # Low sample count - more noise (like 16-64 samples per pixel in ray tracer)
+    {"type": "ray_tracing", "intensity": "very_low_samples", "base_scale": 0.15, "gaussian_layer": 0.02, "num_noisy_regions": 2},
+    {"type": "ray_tracing", "intensity": "low_samples", "base_scale": 0.25, "gaussian_layer": 0.03, "num_noisy_regions": 3},
+    {"type": "ray_tracing", "intensity": "medium_samples", "base_scale": 0.4, "gaussian_layer": 0.04, "num_noisy_regions": 3},
+    {"type": "ray_tracing", "intensity": "high_noise", "base_scale": 0.5, "gaussian_layer": 0.05, "num_noisy_regions": 4},
+    {"type": "ray_tracing", "intensity": "very_high_noise", "base_scale": 0.6, "gaussian_layer": 0.06, "num_noisy_regions": 4},
+    {"type": "ray_tracing", "intensity": "extreme_noise", "base_scale": 0.8, "gaussian_layer": 0.08, "num_noisy_regions": 5},
     
-    {"type": "salt_pepper", "intensity": "very_low", "whole_image": True, "amount": 0.02},
-    {"type": "salt_pepper", "intensity": "low", "whole_image": True, "amount": 0.05},
-    {"type": "salt_pepper", "intensity": "medium", "whole_image": True, "amount": 0.1},
-    {"type": "salt_pepper", "intensity": "high", "whole_image": True, "amount": 0.2},
-    {"type": "salt_pepper", "intensity": "very_high", "whole_image": True, "amount": 0.3},
-    {"type": "salt_pepper", "intensity": "extreme", "whole_image": True, "amount": 0.4},
-    {"type": "salt_pepper", "intensity": "high_localized", "whole_image": False, "amount": 0.25, "coverage": 0.2},
-    {"type": "salt_pepper", "intensity": "extreme_localized", "whole_image": False, "amount": 0.5, "coverage": 0.15},
+    # With varying noise across color channels (common in ray tracing)
+    {"type": "ray_tracing", "intensity": "low_samples_color_var", "base_scale": 0.25, "gaussian_layer": 0.03, "num_noisy_regions": 2, "color_variance": True},
+    {"type": "ray_tracing", "intensity": "medium_samples_color_var", "base_scale": 0.4, "gaussian_layer": 0.04, "num_noisy_regions": 3, "color_variance": True},
+    {"type": "ray_tracing", "intensity": "high_noise_color_var", "base_scale": 0.5, "gaussian_layer": 0.05, "num_noisy_regions": 4, "color_variance": True},
+    {"type": "ray_tracing", "intensity": "extreme_noise_color_var", "base_scale": 0.7, "gaussian_layer": 0.07, "num_noisy_regions": 5, "color_variance": True},
     
-    {"type": "speckle", "intensity": "very_low", "whole_image": True, "sigma": 0.05},
-    {"type": "speckle", "intensity": "low", "whole_image": True, "sigma": 0.1},
-    {"type": "speckle", "intensity": "medium", "whole_image": True, "sigma": 0.2},
-    {"type": "speckle", "intensity": "high", "whole_image": True, "sigma": 0.3},
-    {"type": "speckle", "intensity": "very_high", "whole_image": True, "sigma": 0.45},
-    {"type": "speckle", "intensity": "extreme", "whole_image": True, "sigma": 0.6},
-    {"type": "speckle", "intensity": "high_localized", "whole_image": False, "sigma": 0.35, "coverage": 0.25},
-    {"type": "speckle", "intensity": "extreme_localized", "whole_image": False, "sigma": 0.5, "coverage": 0.2},
+    # Heavy localized noise (like difficult indirect lighting areas)
+    {"type": "ray_tracing", "intensity": "difficult_regions_low", "base_scale": 0.2, "gaussian_layer": 0.02, "num_noisy_regions": 4, "difficult_scale": 0.6},
+    {"type": "ray_tracing", "intensity": "difficult_regions_medium", "base_scale": 0.3, "gaussian_layer": 0.03, "num_noisy_regions": 5, "difficult_scale": 0.5},
+    {"type": "ray_tracing", "intensity": "difficult_regions_high", "base_scale": 0.4, "gaussian_layer": 0.04, "num_noisy_regions": 6, "difficult_scale": 0.4},
+    {"type": "ray_tracing", "intensity": "difficult_regions_extreme", "base_scale": 0.5, "gaussian_layer": 0.05, "num_noisy_regions": 7, "difficult_scale": 0.3},
     
-    {"type": "poisson", "intensity": "very_low", "whole_image": True, "scale": 1.0},
-    {"type": "poisson", "intensity": "low", "whole_image": True, "scale": 0.8},
-    {"type": "poisson", "intensity": "medium", "whole_image": True, "scale": 0.6},
-    {"type": "poisson", "intensity": "high", "whole_image": True, "scale": 0.4},
-    {"type": "poisson", "intensity": "very_high", "whole_image": True, "scale": 0.2},
-    {"type": "poisson", "intensity": "extreme", "whole_image": True, "scale": 0.1},
-    {"type": "poisson", "intensity": "low_localized", "whole_image": False, "scale": 0.6, "coverage": 0.3},
-    {"type": "poisson", "intensity": "high_localized", "whole_image": False, "scale": 0.3, "coverage": 0.2},
+    # Combined color variance + difficult regions
+    {"type": "ray_tracing", "intensity": "realistic_low", "base_scale": 0.25, "gaussian_layer": 0.03, "num_noisy_regions": 3, "color_variance": True, "difficult_scale": 0.6},
+    {"type": "ray_tracing", "intensity": "realistic_medium", "base_scale": 0.35, "gaussian_layer": 0.04, "num_noisy_regions": 4, "color_variance": True, "difficult_scale": 0.5},
+    {"type": "ray_tracing", "intensity": "realistic_high", "base_scale": 0.45, "gaussian_layer": 0.05, "num_noisy_regions": 5, "color_variance": True, "difficult_scale": 0.4},
+    {"type": "ray_tracing", "intensity": "realistic_extreme", "base_scale": 0.6, "gaussian_layer": 0.06, "num_noisy_regions": 6, "color_variance": True, "difficult_scale": 0.3},
     
-    {"type": "gaussian", "intensity": "combined_low", "whole_image": True, "sigma": 0.05, "multi_apply": True, "applications": 2},
-    {"type": "gaussian", "intensity": "combined_medium", "whole_image": True, "sigma": 0.08, "multi_apply": True, "applications": 3},
-    {"type": "gaussian", "intensity": "combined_high", "whole_image": True, "sigma": 0.1, "multi_apply": True, "applications": 4},
-    {"type": "speckle", "intensity": "combined_low", "whole_image": True, "sigma": 0.08, "multi_apply": True, "applications": 2},
-    {"type": "speckle", "intensity": "combined_medium", "whole_image": True, "sigma": 0.12, "multi_apply": True, "applications": 3},
-    {"type": "salt_pepper", "intensity": "combined_low", "whole_image": True, "amount": 0.05, "multi_apply": True, "applications": 2},
-    {"type": "salt_pepper", "intensity": "combined_medium", "whole_image": True, "amount": 0.08, "multi_apply": True, "applications": 2},
-    {"type": "poisson", "intensity": "combined_medium", "whole_image": True, "scale": 0.5, "multi_apply": True, "applications": 2},
-    {"type": "poisson", "intensity": "combined_high", "whole_image": True, "scale": 0.3, "multi_apply": True, "applications": 3},
-
-    {"type": "hybrid", "base_noise": "gaussian", "intensity": "whole_plus_local_low", "whole_sigma": 0.03, "local_sigma": 0.15, "coverage": 0.25},
-    {"type": "hybrid", "base_noise": "gaussian", "intensity": "whole_plus_local_medium", "whole_sigma": 0.05, "local_sigma": 0.25, "coverage": 0.3},
-    {"type": "hybrid", "base_noise": "gaussian", "intensity": "whole_plus_local_high", "whole_sigma": 0.08, "local_sigma": 0.4, "coverage": 0.2},
-    {"type": "hybrid", "base_noise": "gaussian", "intensity": "whole_plus_local_extreme", "whole_sigma": 0.1, "local_sigma": 0.6, "coverage": 0.15},
-    
-    {"type": "hybrid", "base_noise": "salt_pepper", "intensity": "whole_plus_local_low", "whole_amount": 0.03, "local_amount": 0.15, "coverage": 0.25},
-    {"type": "hybrid", "base_noise": "salt_pepper", "intensity": "whole_plus_local_medium", "whole_amount": 0.05, "local_amount": 0.25, "coverage": 0.3},
-    {"type": "hybrid", "base_noise": "salt_pepper", "intensity": "whole_plus_local_high", "whole_amount": 0.08, "local_amount": 0.4, "coverage": 0.2},
-    
-    {"type": "hybrid", "base_noise": "speckle", "intensity": "whole_plus_local_low", "whole_sigma": 0.05, "local_sigma": 0.2, "coverage": 0.3},
-    {"type": "hybrid", "base_noise": "speckle", "intensity": "whole_plus_local_medium", "whole_sigma": 0.1, "local_sigma": 0.3, "coverage": 0.25},
-    {"type": "hybrid", "base_noise": "speckle", "intensity": "whole_plus_local_high", "whole_sigma": 0.15, "local_sigma": 0.5, "coverage": 0.2},
-    
-    {"type": "hybrid", "base_noise": "poisson", "intensity": "whole_plus_local_low", "whole_scale": 0.8, "local_scale": 0.4, "coverage": 0.3},
-    {"type": "hybrid", "base_noise": "poisson", "intensity": "whole_plus_local_medium", "whole_scale": 0.6, "local_scale": 0.2, "coverage": 0.25},
-    {"type": "hybrid", "base_noise": "poisson", "intensity": "whole_plus_local_high", "whole_scale": 0.4, "local_scale": 0.1, "coverage": 0.2},
+    # Very fine grain (high sample count but still some noise)
+    {"type": "ray_tracing", "intensity": "fine_grain_subtle", "base_scale": 0.05, "gaussian_layer": 0.01, "num_noisy_regions": 1},
+    {"type": "ray_tracing", "intensity": "fine_grain_low", "base_scale": 0.1, "gaussian_layer": 0.015, "num_noisy_regions": 2},
+    {"type": "ray_tracing", "intensity": "fine_grain_medium", "base_scale": 0.15, "gaussian_layer": 0.02, "num_noisy_regions": 2},
 ]
 
 
@@ -176,6 +146,61 @@ def add_poisson_noise(image, whole_image=True, scale=1.0, coverage=1.0):
     return np.clip(noisy, 0, 255).astype(np.uint8)
 
 
+def apply_ray_tracing_noise(image, config):
+    """Apply ray tracing-style noise (Poisson base + Gaussian + localized variations)
+    
+    Ray tracing noise characteristics:
+    - Poisson noise as base (from Monte Carlo sampling)
+    - Gaussian noise layer (from variance in light path integration)  
+    - Localized regions with higher noise (difficult indirect lighting, caustics, etc.)
+    - Optional per-channel variance
+    """
+    noisy = image.copy().astype(np.float32)
+    h, w = image.shape[:2]
+    
+    # Base Poisson noise layer (primary ray tracing noise)
+    base_scale = config.get("base_scale", 0.3)
+    if config.get("color_variance", False):
+        # Apply different noise levels to each color channel
+        for c in range(3):
+            channel_scale = base_scale * np.random.uniform(0.8, 1.2)
+            scaled = noisy[:, :, c] * channel_scale
+            noisy[:, :, c] = np.random.poisson(scaled) / channel_scale
+    else:
+        scaled = noisy * base_scale
+        noisy = np.random.poisson(scaled) / base_scale
+    
+    # Add Gaussian layer (represents variance from Monte Carlo integration)
+    gaussian_sigma = config.get("gaussian_layer", 0.03)
+    gaussian_noise = np.random.normal(0, gaussian_sigma, image.shape)
+    noisy = noisy + gaussian_noise * 255.0
+    
+    # Add localized noisy regions (difficult to sample areas in ray tracing)
+    num_noisy_regions = config.get("num_noisy_regions", 3)
+    difficult_scale = config.get("difficult_scale", None)
+    
+    for _ in range(num_noisy_regions):
+        # Random region size and position
+        region_coverage = np.random.uniform(0.05, 0.25)
+        region_h = int(h * np.random.uniform(0.15, 0.4))
+        region_w = int(w * np.random.uniform(0.15, 0.4))
+        
+        y = np.random.randint(0, max(1, h - region_h))
+        x = np.random.randint(0, max(1, w - region_w))
+        
+        # Apply extra Poisson noise to this region
+        if difficult_scale is not None:
+            region = noisy[y:y+region_h, x:x+region_w]
+            scaled_region = region * difficult_scale
+            noisy[y:y+region_h, x:x+region_w] = np.random.poisson(np.clip(scaled_region, 0, None)) / difficult_scale
+        
+        # Add extra Gaussian noise to region
+        extra_gaussian = np.random.normal(0, gaussian_sigma * 1.5, (region_h, region_w, 3))
+        noisy[y:y+region_h, x:x+region_w] += extra_gaussian * 255.0
+    
+    return np.clip(noisy, 0, 255).astype(np.uint8)
+
+
 def apply_noise(image, config, num_applications=1):
     """Apply noise based on configuration
     
@@ -185,6 +210,11 @@ def apply_noise(image, config, num_applications=1):
         num_applications: Number of times to apply the noise (for layered effect)
     """
     noise_type = config["type"]
+    
+    # Handle ray tracing noise separately
+    if noise_type == "ray_tracing":
+        return apply_ray_tracing_noise(image, config)
+    
     whole_image = config.get("whole_image", True)
     coverage = config.get("coverage", 1.0)
     
@@ -259,6 +289,7 @@ def process_image_sync(image_data, image_index, save_path, configs):
         
         low_res_np = np.array(low_res)
         
+        # Use ray tracing noise configs
         noise_config = random.choice(configs)
         
         if not noise_config.get("multi_apply", False):
@@ -299,7 +330,7 @@ async def process_image(image_data, image_index, executor):
         image_data, 
         image_index, 
         SAVE_PATH, 
-        NOISE_CONFIGS
+        RAY_TRACING_NOISE_CONFIGS
     )
 
 
