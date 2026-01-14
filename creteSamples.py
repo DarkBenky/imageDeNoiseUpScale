@@ -61,6 +61,68 @@ RAY_TRACING_NOISE_CONFIGS = [
     {"type": "ray_tracing", "intensity": "fine_grain_subtle", "base_scale": 0.05, "gaussian_layer": 0.01, "num_noisy_regions": 1},
     {"type": "ray_tracing", "intensity": "fine_grain_low", "base_scale": 0.1, "gaussian_layer": 0.015, "num_noisy_regions": 2},
     {"type": "ray_tracing", "intensity": "fine_grain_medium", "base_scale": 0.15, "gaussian_layer": 0.02, "num_noisy_regions": 2},
+    
+    # Ultra extreme noise (like 1-8 samples per pixel - very early ray tracer previews)
+    {"type": "ray_tracing", "intensity": "ultra_extreme", "base_scale": 0.9, "gaussian_layer": 0.1, "num_noisy_regions": 6},
+    {"type": "ray_tracing", "intensity": "ultra_extreme_color_var", "base_scale": 0.9, "gaussian_layer": 0.1, "num_noisy_regions": 7, "color_variance": True},
+    {"type": "ray_tracing", "intensity": "ultra_extreme_difficult", "base_scale": 0.85, "gaussian_layer": 0.12, "num_noisy_regions": 8, "difficult_scale": 0.15},
+    {"type": "ray_tracing", "intensity": "ultra_extreme_realistic", "base_scale": 0.8, "gaussian_layer": 0.1, "num_noisy_regions": 7, "color_variance": True, "difficult_scale": 0.2},
+    
+    # Insane noise levels (like 1-4 samples per pixel)
+    {"type": "ray_tracing", "intensity": "insane", "base_scale": 0.95, "gaussian_layer": 0.15, "num_noisy_regions": 8},
+    {"type": "ray_tracing", "intensity": "insane_color_var", "base_scale": 0.95, "gaussian_layer": 0.15, "num_noisy_regions": 9, "color_variance": True},
+    {"type": "ray_tracing", "intensity": "insane_difficult", "base_scale": 0.9, "gaussian_layer": 0.18, "num_noisy_regions": 10, "difficult_scale": 0.1},
+    {"type": "ray_tracing", "intensity": "insane_realistic", "base_scale": 0.9, "gaussian_layer": 0.15, "num_noisy_regions": 9, "color_variance": True, "difficult_scale": 0.12},
+    
+    # Maximum chaos (barely recognizable image - extreme low sample counts)
+    {"type": "ray_tracing", "intensity": "maximum_chaos", "base_scale": 0.98, "gaussian_layer": 0.2, "num_noisy_regions": 12},
+    {"type": "ray_tracing", "intensity": "maximum_chaos_color_var", "base_scale": 0.98, "gaussian_layer": 0.2, "num_noisy_regions": 12, "color_variance": True},
+    {"type": "ray_tracing", "intensity": "maximum_chaos_realistic", "base_scale": 0.95, "gaussian_layer": 0.22, "num_noisy_regions": 15, "color_variance": True, "difficult_scale": 0.08},
+
+    # Extreme localized noise (like caustics or very difficult lighting scenarios)
+    {"type": "ray_tracing", "intensity": "extreme_localized", "base_scale": 0.4, "gaussian_layer": 0.05, "num_noisy_regions": 8, "difficult_scale": 0.25},
+    {"type": "ray_tracing", "intensity": "extreme_localized_color_var", "base_scale": 0.4, "gaussian_layer": 0.05, "num_noisy_regions": 8, "color_variance": True, "difficult_scale": 0.25},
+    {"type": "ray_tracing", "intensity": "ultra_localized", "base_scale": 0.5, "gaussian_layer": 0.06, "num_noisy_regions": 10, "difficult_scale": 0.2},
+    {"type": "ray_tracing", "intensity": "ultra_localized_realistic", "base_scale": 0.5, "gaussian_layer": 0.06, "num_noisy_regions": 12, "color_variance": True, "difficult_scale": 0.18},
+    {"type": "ray_tracing", "intensity": "insane_localized", "base_scale": 0.7, "gaussian_layer": 0.08, "num_noisy_regions": 14, "difficult_scale": 0.15},
+    {"type": "ray_tracing", "intensity": "insane_localized_realistic", "base_scale": 0.7, "gaussian_layer": 0.08, "num_noisy_regions": 16, "color_variance": True, "difficult_scale": 0.12},
+    
+    # Beyond maximum - absolute worst case scenarios
+    {"type": "ray_tracing", "intensity": "apocalyptic", "base_scale": 0.99, "gaussian_layer": 0.25, "num_noisy_regions": 15},
+    {"type": "ray_tracing", "intensity": "apocalyptic_color_var", "base_scale": 0.99, "gaussian_layer": 0.25, "num_noisy_regions": 16, "color_variance": True},
+    {"type": "ray_tracing", "intensity": "apocalyptic_realistic", "base_scale": 0.98, "gaussian_layer": 0.28, "num_noisy_regions": 18, "color_variance": True, "difficult_scale": 0.05},
+    
+    # Pure chaos - nearly impossible to denoise
+    {"type": "ray_tracing", "intensity": "absolute_chaos", "base_scale": 0.995, "gaussian_layer": 0.3, "num_noisy_regions": 20},
+    {"type": "ray_tracing", "intensity": "absolute_chaos_color_var", "base_scale": 0.995, "gaussian_layer": 0.3, "num_noisy_regions": 20, "color_variance": True},
+    {"type": "ray_tracing", "intensity": "absolute_chaos_realistic", "base_scale": 0.99, "gaussian_layer": 0.35, "num_noisy_regions": 25, "color_variance": True, "difficult_scale": 0.03},
+    
+    # Mixed intensity levels (varied noise across different noise levels)
+    {"type": "ray_tracing", "intensity": "mixed_low_high", "base_scale": 0.3, "gaussian_layer": 0.04, "num_noisy_regions": 6, "difficult_scale": 0.4},
+    {"type": "ray_tracing", "intensity": "mixed_medium_extreme", "base_scale": 0.5, "gaussian_layer": 0.06, "num_noisy_regions": 8, "difficult_scale": 0.25},
+    {"type": "ray_tracing", "intensity": "mixed_high_insane", "base_scale": 0.7, "gaussian_layer": 0.09, "num_noisy_regions": 10, "difficult_scale": 0.15},
+    {"type": "ray_tracing", "intensity": "mixed_realistic_low", "base_scale": 0.35, "gaussian_layer": 0.045, "num_noisy_regions": 7, "color_variance": True, "difficult_scale": 0.35},
+    {"type": "ray_tracing", "intensity": "mixed_realistic_high", "base_scale": 0.65, "gaussian_layer": 0.075, "num_noisy_regions": 9, "color_variance": True, "difficult_scale": 0.2},
+    
+    # Heavy localized with low base (mostly clean but very noisy regions)
+    {"type": "ray_tracing", "intensity": "spotty_low", "base_scale": 0.15, "gaussian_layer": 0.02, "num_noisy_regions": 5, "difficult_scale": 0.5},
+    {"type": "ray_tracing", "intensity": "spotty_medium", "base_scale": 0.2, "gaussian_layer": 0.025, "num_noisy_regions": 7, "difficult_scale": 0.4},
+    {"type": "ray_tracing", "intensity": "spotty_high", "base_scale": 0.25, "gaussian_layer": 0.03, "num_noisy_regions": 9, "difficult_scale": 0.3},
+    {"type": "ray_tracing", "intensity": "spotty_extreme", "base_scale": 0.3, "gaussian_layer": 0.04, "num_noisy_regions": 12, "difficult_scale": 0.2},
+    {"type": "ray_tracing", "intensity": "spotty_realistic_low", "base_scale": 0.18, "gaussian_layer": 0.025, "num_noisy_regions": 6, "color_variance": True, "difficult_scale": 0.45},
+    {"type": "ray_tracing", "intensity": "spotty_realistic_high", "base_scale": 0.28, "gaussian_layer": 0.035, "num_noisy_regions": 10, "color_variance": True, "difficult_scale": 0.25},
+    
+    # Gradient noise (simulating progressive rendering with some areas converged)
+    {"type": "ray_tracing", "intensity": "progressive_early", "base_scale": 0.6, "gaussian_layer": 0.07, "num_noisy_regions": 4, "difficult_scale": 0.35},
+    {"type": "ray_tracing", "intensity": "progressive_mid", "base_scale": 0.45, "gaussian_layer": 0.05, "num_noisy_regions": 5, "difficult_scale": 0.45},
+    {"type": "ray_tracing", "intensity": "progressive_realistic", "base_scale": 0.5, "gaussian_layer": 0.055, "num_noisy_regions": 6, "color_variance": True, "difficult_scale": 0.4},
+    
+    # Extreme variations in every parameter
+    {"type": "ray_tracing", "intensity": "wildcard_1", "base_scale": 0.55, "gaussian_layer": 0.12, "num_noisy_regions": 9, "color_variance": True, "difficult_scale": 0.28},
+    {"type": "ray_tracing", "intensity": "wildcard_2", "base_scale": 0.75, "gaussian_layer": 0.06, "num_noisy_regions": 11, "difficult_scale": 0.22},
+    {"type": "ray_tracing", "intensity": "wildcard_3", "base_scale": 0.42, "gaussian_layer": 0.15, "num_noisy_regions": 13, "color_variance": True, "difficult_scale": 0.32},
+    {"type": "ray_tracing", "intensity": "wildcard_4", "base_scale": 0.88, "gaussian_layer": 0.11, "num_noisy_regions": 7, "color_variance": True, "difficult_scale": 0.16},
+    {"type": "ray_tracing", "intensity": "wildcard_5", "base_scale": 0.33, "gaussian_layer": 0.08, "num_noisy_regions": 15, "difficult_scale": 0.24},
 ]
 
 
