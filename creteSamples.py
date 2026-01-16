@@ -14,7 +14,8 @@ import torchvision.transforms as transforms
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 import multiprocessing
 
-SAVE_PATH = "/media/user/f7a503ec-b25c-41a5-9baa-d350714f613a/imageData"
+# SAVE_PATH = "/media/user/2TB/imageData"
+SAVE_PATH = "/media/user/128GB"
 SAVE_PERIOD = 256
 IMAGE_WIDTH_LOW_RES = 800
 IMAGE_HEIGHT_LOW_RES = 600
@@ -23,7 +24,7 @@ IMAGE_HEIGHT_HIGH_RES = int(600 * 1.5)
 
 MAX_CONCURRENT_DOWNLOADS = 256
 DOWNLOAD_TIMEOUT = 3
-MAX_PROCESSING_WORKERS = multiprocessing.cpu_count() * 2
+MAX_PROCESSING_WORKERS = int(multiprocessing.cpu_count() * 0.75)
 
 MAX_NOISE_APPLICATIONS = 5
 
@@ -123,6 +124,104 @@ RAY_TRACING_NOISE_CONFIGS = [
     {"type": "ray_tracing", "intensity": "wildcard_3", "base_scale": 0.42, "gaussian_layer": 0.15, "num_noisy_regions": 13, "color_variance": True, "difficult_scale": 0.32},
     {"type": "ray_tracing", "intensity": "wildcard_4", "base_scale": 0.88, "gaussian_layer": 0.11, "num_noisy_regions": 7, "color_variance": True, "difficult_scale": 0.16},
     {"type": "ray_tracing", "intensity": "wildcard_5", "base_scale": 0.33, "gaussian_layer": 0.08, "num_noisy_regions": 15, "difficult_scale": 0.24},
+    
+    # Sample splatting noise (photon mapping / scattered sample reconstruction)
+    # Fine detail versions (high density, low displacement)
+    {"type": "sample_splatting", "intensity": "ultra_fine", "sample_density": 0.95, "max_displacement": 1, "base_darkness": 0.05, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "very_fine", "sample_density": 0.92, "max_displacement": 2, "base_darkness": 0.08, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "fine", "sample_density": 0.87, "max_displacement": 2, "base_darkness": 0.1, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "high_detail", "sample_density": 0.83, "max_displacement": 3, "base_darkness": 0.12, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "medium_detail", "sample_density": 0.78, "max_displacement": 4, "base_darkness": 0.15, "blend_radius": 0},
+    
+    # Medium quality versions
+    {"type": "sample_splatting", "intensity": "very_sparse", "sample_density": 0.45, "max_displacement": 8, "base_darkness": 0.3, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "sparse", "sample_density": 0.63, "max_displacement": 6, "base_darkness": 0.25, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "medium_sparse", "sample_density": 0.85, "max_displacement": 5, "base_darkness": 0.2, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "moderate", "sample_density": 0.67, "max_displacement": 4, "base_darkness": 0.15, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "dense", "sample_density": 0.88, "max_displacement": 3, "base_darkness": 0.1, "blend_radius": 0},
+    
+    # High displacement versions (scattered samples)
+    {"type": "sample_splatting", "intensity": "high_displacement", "sample_density": 0.5, "max_displacement": 12, "base_darkness": 0.2, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "extreme_displacement", "sample_density": 0.82, "max_displacement": 20, "base_darkness": 0.25, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "chaotic_displacement", "sample_density": 0.39, "max_displacement": 30, "base_darkness": 0.3, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "insane_displacement", "sample_density": 0.96, "max_displacement": 40, "base_darkness": 0.35, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "apocalyptic_displacement", "sample_density": 0.7, "max_displacement": 50, "base_darkness": 0.4, "blend_radius": 0},
+    
+    # Ultra sparse versions (very challenging)
+    {"type": "sample_splatting", "intensity": "ultra_sparse_dark", "sample_density": 0.33, "max_displacement": 10, "base_darkness": 0.5, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "ultra_sparse_scattered", "sample_density": 0.52, "max_displacement": 15, "base_darkness": 0.4, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "mega_sparse", "sample_density": 0.76, "max_displacement": 12, "base_darkness": 0.6, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "mega_sparse_scattered", "sample_density": 0.64, "max_displacement": 18, "base_darkness": 0.65, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "nearly_black", "sample_density": 0.73, "max_displacement": 15, "base_darkness": 0.75, "blend_radius": 0},
+    
+    # Photon-like versions (sharp samples, no blur)
+    {"type": "sample_splatting", "intensity": "photon_ultra_fine", "sample_density": 0.92, "max_displacement": 1, "base_darkness": 0.03, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "photon_very_fine", "sample_density": 0.88, "max_displacement": 2, "base_darkness": 0.05, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "photon_fine", "sample_density": 0.82, "max_displacement": 2, "base_darkness": 0.08, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "photon_high_detail", "sample_density": 0.75, "max_displacement": 3, "base_darkness": 0.1, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "photon_medium_detail", "sample_density": 0.65, "max_displacement": 4, "base_darkness": 0.12, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "photon_like_low", "sample_density": 0.25, "max_displacement": 7, "base_darkness": 0.35, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "photon_like_medium", "sample_density": 0.35, "max_displacement": 5, "base_darkness": 0.25, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "photon_like_high", "sample_density": 0.5, "max_displacement": 4, "base_darkness": 0.18, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "photon_moderate", "sample_density": 0.55, "max_displacement": 5, "base_darkness": 0.15, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "photon_scattered", "sample_density": 0.4, "max_displacement": 8, "base_darkness": 0.2, "blend_radius": 0},
+    
+    # Mixed challenging versions (low density + high displacement)
+    {"type": "sample_splatting", "intensity": "chaos_low", "sample_density": 0.55, "max_displacement": 25, "base_darkness": 0.45, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "chaos_medium", "sample_density": 0.65, "max_displacement": 35, "base_darkness": 0.4, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "chaos_high", "sample_density": 0.45, "max_displacement": 45, "base_darkness": 0.35, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "chaos_extreme", "sample_density": 0.35, "max_displacement": 55, "base_darkness": 0.5, "blend_radius": 0},
+    
+    # Varying darkness levels with moderate parameters
+    {"type": "sample_splatting", "intensity": "dark_moderate", "sample_density": 0.88, "max_displacement": 8, "base_darkness": 0.55, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "very_dark", "sample_density": 0.80, "max_displacement": 10, "base_darkness": 0.7, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "extremely_dark", "sample_density": 0.75, "max_displacement": 12, "base_darkness": 0.8, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "pitch_black", "sample_density": 0.75, "max_displacement": 15, "base_darkness": 0.9, "blend_radius": 0},
+    
+    # No blending versions (harsh samples)
+    {"type": "sample_splatting", "intensity": "harsh_sparse", "sample_density": 0.60, "max_displacement": 10, "base_darkness": 0.4, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "harsh_moderate", "sample_density": 0.55, "max_displacement": 8, "base_darkness": 0.3, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "harsh_dense", "sample_density": 0.5, "max_displacement": 6, "base_darkness": 0.2, "blend_radius": 0},
+    
+    # Sharp sample variations (no blur like real ray tracing)
+    {"type": "sample_splatting", "intensity": "sharp_sparse", "sample_density": 0.95, "max_displacement": 10, "base_darkness": 0.35, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "sharp_moderate", "sample_density": 0.92, "max_displacement": 8, "base_darkness": 0.25, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "sharp_dense", "sample_density": 0.88, "max_displacement": 5, "base_darkness": 0.15, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "sharp_extreme", "sample_density": 0.82, "max_displacement": 15, "base_darkness": 0.45, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "sharp_chaotic", "sample_density": 0.78, "max_displacement": 20, "base_darkness": 0.5, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "sharp_insane", "sample_density": 0.70, "max_displacement": 25, "base_darkness": 0.6, "blend_radius": 0},
+    
+    # Extreme combinations (worst case scenarios)
+    {"type": "sample_splatting", "intensity": "nightmare_1", "sample_density": 0.75, "max_displacement": 40, "base_darkness": 0.7, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "nightmare_2", "sample_density": 0.68, "max_displacement": 50, "base_darkness": 0.75, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "nightmare_3", "sample_density": 0.92, "max_displacement": 35, "base_darkness": 0.65, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "nightmare_4", "sample_density": 0.48, "max_displacement": 45, "base_darkness": 0.8, "blend_radius": 0},
+    
+    # Barely visible versions
+    {"type": "sample_splatting", "intensity": "ghost_1", "sample_density": 0.44, "max_displacement": 20, "base_darkness": 0.85, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "ghost_2", "sample_density": 0.39, "max_displacement": 25, "base_darkness": 0.9, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "ghost_3", "sample_density": 0.29, "max_displacement": 30, "base_darkness": 0.92, "blend_radius": 0},
+    
+    # Random challenging mixes
+    {"type": "sample_splatting", "intensity": "random_hard_1", "sample_density": 0.32, "max_displacement": 22, "base_darkness": 0.48, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "random_hard_2", "sample_density": 0.26, "max_displacement": 28, "base_darkness": 0.52, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "random_hard_3", "sample_density": 0.23, "max_displacement": 32, "base_darkness": 0.58, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "random_hard_4", "sample_density": 0.37, "max_displacement": 18, "base_darkness": 0.42, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "random_hard_5", "sample_density": 0.45, "max_displacement": 38, "base_darkness": 0.62, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "random_hard_6", "sample_density": 0.78, "max_displacement": 48, "base_darkness": 0.54, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "random_hard_7", "sample_density": 0.92, "max_displacement": 64, "base_darkness": 0.47, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "random_hard_8", "sample_density": 0.51, "max_displacement": 73, "base_darkness": 0.51, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "random_hard_9", "sample_density": 0.61, "max_displacement": 55, "base_darkness": 0.49, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "random_hard_10", "sample_density": 0.93, "max_displacement": 60, "base_darkness": 0.53, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "random_hard_11", "sample_density": 0.39, "max_displacement": 70, "base_darkness": 0.46, "blend_radius": 0},
+    
+    
+    {"type": "poisson", "intensity": "low", "scale": 30.0, "whole_image": True},
+    {"type": "poisson", "intensity": "medium", "scale": 15.0, "whole_image": True},
+    {"type": "poisson", "intensity": "high", "scale": 7.0, "whole_image": True},
+    {"type": "poisson", "intensity": "localized_low", "scale": 25.0, "whole_image": False, "coverage": 0.3},
+    {"type": "poisson", "intensity": "localized_medium", "scale": 12.0, "whole_image": False, "coverage": 0.4},
+    {"type": "poisson", "intensity": "localized_high", "scale": 5.0, "whole_image": False, "coverage": 0.5}
 ]
 
 
@@ -208,6 +307,62 @@ def add_poisson_noise(image, whole_image=True, scale=1.0, coverage=1.0):
     return np.clip(noisy, 0, 255).astype(np.uint8)
 
 
+def apply_sample_splatting_noise(image, config):
+    """Apply sample splatting noise (simulates photon mapping / low sample count path tracing)
+    
+    Creates noise by:
+    1. Starting with black/dark canvas
+    2. Sampling colors from original image
+    3. Placing samples at nearby positions (with random displacement)
+    4. Blending samples to create final noisy image
+    
+    This simulates ray tracers with very low sample counts where pixel colors
+    are reconstructed from sparse, scattered samples.
+    """
+    h, w = image.shape[:2]
+    
+    sample_density = config.get("sample_density", 0.3)
+    max_displacement = config.get("max_displacement", 5)
+    base_darkness = config.get("base_darkness", 0.2)
+    blend_radius = config.get("blend_radius", 1)
+    
+    canvas = np.ones_like(image, dtype=np.float32) * (image.mean() * base_darkness)
+    sample_counts = np.zeros((h, w), dtype=np.float32)
+    
+    num_samples = int(h * w * sample_density)
+    
+    for _ in range(num_samples):
+        src_y = np.random.randint(0, h)
+        src_x = np.random.randint(0, w)
+        
+        color = image[src_y, src_x].astype(np.float32)
+        
+        disp_y = int(np.random.normal(0, max_displacement))
+        disp_x = int(np.random.normal(0, max_displacement))
+        
+        dst_y = np.clip(src_y + disp_y, 0, h - 1)
+        dst_x = np.clip(src_x + disp_x, 0, w - 1)
+        
+        for dy in range(-blend_radius, blend_radius + 1):
+            for dx in range(-blend_radius, blend_radius + 1):
+                py = np.clip(dst_y + dy, 0, h - 1)
+                px = np.clip(dst_x + dx, 0, w - 1)
+                
+                weight = 1.0 / (1.0 + abs(dy) + abs(dx))
+                canvas[py, px] += color * weight
+                sample_counts[py, px] += weight
+    
+    mask = sample_counts > 0
+    canvas[mask] /= sample_counts[mask, np.newaxis]
+    
+    no_sample_pixels = ~mask
+    if np.any(no_sample_pixels):
+        canvas[no_sample_pixels] = (image[no_sample_pixels].astype(np.float32) * base_darkness + 
+                                     np.random.normal(0, 15, (np.sum(no_sample_pixels), 3)))
+    
+    return np.clip(canvas, 0, 255).astype(np.uint8)
+
+
 def apply_ray_tracing_noise(image, config):
     """Apply ray tracing-style noise (Poisson base + Gaussian + localized variations)
     
@@ -277,6 +432,18 @@ def apply_noise(image, config, num_applications=1):
     if noise_type == "ray_tracing":
         return apply_ray_tracing_noise(image, config)
     
+    # Handle sample splatting noise
+    if noise_type == "sample_splatting":
+        img = apply_sample_splatting_noise(image, config)
+        
+        ray_tracing_configs = [c for c in RAY_TRACING_NOISE_CONFIGS if c.get("type") == "ray_tracing"]
+        if ray_tracing_configs:
+            extra_config = random.choice(ray_tracing_configs)
+            img = apply_noise(img, extra_config, num_applications=1)
+        
+        return img
+
+      
     whole_image = config.get("whole_image", True)
     coverage = config.get("coverage", 1.0)
     
@@ -351,10 +518,11 @@ def process_image_sync(image_data, image_index, save_path, configs):
         
         low_res_np = np.array(low_res)
         
-        # Use ray tracing noise configs
         noise_config = random.choice(configs)
         
-        if not noise_config.get("multi_apply", False):
+        if noise_config.get("type") == "sample_splatting":
+            num_applications = 1
+        elif not noise_config.get("multi_apply", False):
             num_applications = random.randint(1, MAX_NOISE_APPLICATIONS)
         else:
             num_applications = 1
@@ -438,7 +606,7 @@ async def process_dataset():
     print(f"Starting from index {current_index}")
     print(f"Using {MAX_PROCESSING_WORKERS} workers for parallel processing")
     
-    with ThreadPoolExecutor(max_workers=MAX_PROCESSING_WORKERS) as executor:
+    with ProcessPoolExecutor(max_workers=MAX_PROCESSING_WORKERS) as executor:
         for item in iter(ds):
             batch_urls.append(item["URL"])
             batch_indices.append(current_index)
@@ -511,32 +679,42 @@ class ImageDenoiseDataset(Dataset):
             high_res: Tensor of clean high-resolution image (target)
             metadata: Optional dict with noise configuration used
         """
-        folder = self.valid_folders[idx]
-        
-        high_res_path = folder / "high_res.png"
-        low_res_path = folder / "low_res.png"
-        
-        high_res = Image.open(high_res_path).convert('RGB')
-        low_res = Image.open(low_res_path).convert('RGB')
-        
-        if self.transform:
-            high_res = self.transform(high_res)
-            low_res = self.transform(low_res)
-        else:
-            to_tensor = transforms.ToTensor()
-            high_res = to_tensor(high_res)
-            low_res = to_tensor(low_res)
-        
-        if self.load_metadata:
-            metadata_path = folder / "metadata.json"
-            if metadata_path.exists():
-                with open(metadata_path, 'r') as f:
-                    metadata = json.load(f)
-                return low_res, high_res, metadata
-            else:
-                return low_res, high_res, {}
-        
-        return low_res, high_res
+        max_retries = 10
+        for retry in range(max_retries):
+            try:
+                actual_idx = (idx + retry) % len(self.valid_folders)
+                folder = self.valid_folders[actual_idx]
+                
+                high_res_path = folder / "high_res.png"
+                low_res_path = folder / "low_res.png"
+                
+                high_res = Image.open(high_res_path).convert('RGB')
+                low_res = Image.open(low_res_path).convert('RGB')
+                
+                if self.transform:
+                    high_res = self.transform(high_res)
+                    low_res = self.transform(low_res)
+                else:
+                    to_tensor = transforms.ToTensor()
+                    high_res = to_tensor(high_res)
+                    low_res = to_tensor(low_res)
+                
+                if self.load_metadata:
+                    metadata_path = folder / "metadata.json"
+                    if metadata_path.exists():
+                        with open(metadata_path, 'r') as f:
+                            metadata = json.load(f)
+                        return low_res, high_res, metadata
+                    else:
+                        return low_res, high_res, {}
+                
+                return low_res, high_res
+            
+            except (OSError, IOError, ValueError) as e:
+                if retry < max_retries - 1:
+                    continue
+                else:
+                    raise RuntimeError(f"Failed to load image after {max_retries} retries. Last error: {e}")
 
 
 def create_data_loaders(data_path, batch_size=16, train_split=0.9, num_workers=4, 
