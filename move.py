@@ -1,7 +1,7 @@
 import os
 import shutil
 
-SRC = "/media/user/f7a503ec-b25c-41a5-9baa-d350714f613a/imageData"
+SRC = "/media/user/128GB"
 DST = "/media/user/2TB/imageData"
 
 os.makedirs(DST, exist_ok=True)

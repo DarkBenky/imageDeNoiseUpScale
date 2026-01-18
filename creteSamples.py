@@ -14,8 +14,8 @@ import torchvision.transforms as transforms
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 import multiprocessing
 
-# SAVE_PATH = "/media/user/2TB/imageData"
-SAVE_PATH = "/media/user/128GB"
+SAVE_PATH = "/media/user/2TB/imageData"
+# SAVE_PATH = "/media/user/128GB"
 SAVE_PERIOD = 256
 IMAGE_WIDTH_LOW_RES = 800
 IMAGE_HEIGHT_LOW_RES = 600
@@ -24,7 +24,7 @@ IMAGE_HEIGHT_HIGH_RES = int(600 * 1.5)
 
 MAX_CONCURRENT_DOWNLOADS = 256
 DOWNLOAD_TIMEOUT = 3
-MAX_PROCESSING_WORKERS = int(multiprocessing.cpu_count() * 0.75)
+MAX_PROCESSING_WORKERS = int(multiprocessing.cpu_count() * 0.25)
 
 MAX_NOISE_APPLICATIONS = 5
 
@@ -160,11 +160,14 @@ RAY_TRACING_NOISE_CONFIGS = [
     {"type": "sample_splatting", "intensity": "photon_fine", "sample_density": 0.82, "max_displacement": 2, "base_darkness": 0.08, "blend_radius": 0},
     {"type": "sample_splatting", "intensity": "photon_high_detail", "sample_density": 0.75, "max_displacement": 3, "base_darkness": 0.1, "blend_radius": 0},
     {"type": "sample_splatting", "intensity": "photon_medium_detail", "sample_density": 0.65, "max_displacement": 4, "base_darkness": 0.12, "blend_radius": 0},
-    {"type": "sample_splatting", "intensity": "photon_like_low", "sample_density": 0.25, "max_displacement": 7, "base_darkness": 0.35, "blend_radius": 0},
-    {"type": "sample_splatting", "intensity": "photon_like_medium", "sample_density": 0.35, "max_displacement": 5, "base_darkness": 0.25, "blend_radius": 0},
-    {"type": "sample_splatting", "intensity": "photon_like_high", "sample_density": 0.5, "max_displacement": 4, "base_darkness": 0.18, "blend_radius": 0},
-    {"type": "sample_splatting", "intensity": "photon_moderate", "sample_density": 0.55, "max_displacement": 5, "base_darkness": 0.15, "blend_radius": 0},
-    {"type": "sample_splatting", "intensity": "photon_scattered", "sample_density": 0.4, "max_displacement": 8, "base_darkness": 0.2, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "photon_like_low", "sample_density": 0.75, "max_displacement": 7, "base_darkness": 0.35, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "photon_like_medium", "sample_density": 0.95, "max_displacement": 5, "base_darkness": 0.25, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "photon_like_high", "sample_density": 0.59, "max_displacement": 4, "base_darkness": 0.18, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "photon_moderate", "sample_density": 0.74, "max_displacement": 5, "base_darkness": 0.15, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "photon_scattered", "sample_density": 0.94, "max_displacement": 8, "base_darkness": 0.2, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "photon_insane_displacement", "sample_density": 0.68, "max_displacement": 12, "base_darkness": 0.4, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "photon_apocalyptic_displacement", "sample_density": 0.85, "max_displacement": 11, "base_darkness": 0.5, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "photon_nearly_black", "sample_density": 0.97, "max_displacement": 9, "base_darkness": 0.7, "blend_radius": 0},
     
     # Mixed challenging versions (low density + high displacement)
     {"type": "sample_splatting", "intensity": "chaos_low", "sample_density": 0.55, "max_displacement": 25, "base_darkness": 0.45, "blend_radius": 0},
@@ -190,6 +193,9 @@ RAY_TRACING_NOISE_CONFIGS = [
     {"type": "sample_splatting", "intensity": "sharp_extreme", "sample_density": 0.82, "max_displacement": 15, "base_darkness": 0.45, "blend_radius": 0},
     {"type": "sample_splatting", "intensity": "sharp_chaotic", "sample_density": 0.78, "max_displacement": 20, "base_darkness": 0.5, "blend_radius": 0},
     {"type": "sample_splatting", "intensity": "sharp_insane", "sample_density": 0.70, "max_displacement": 25, "base_darkness": 0.6, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "sharp_apocalyptic", "sample_density": 0.92, "max_displacement": 30, "base_darkness": 0.7, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "sharp_nightmare", "sample_density": 0.89, "max_displacement": 35, "base_darkness": 0.8, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "sharp_abyss", "sample_density": 0.91, "max_displacement": 40, "base_darkness": 0.9, "blend_radius": 0},
     
     # Extreme combinations (worst case scenarios)
     {"type": "sample_splatting", "intensity": "nightmare_1", "sample_density": 0.75, "max_displacement": 40, "base_darkness": 0.7, "blend_radius": 0},
@@ -214,7 +220,10 @@ RAY_TRACING_NOISE_CONFIGS = [
     {"type": "sample_splatting", "intensity": "random_hard_9", "sample_density": 0.61, "max_displacement": 55, "base_darkness": 0.49, "blend_radius": 0},
     {"type": "sample_splatting", "intensity": "random_hard_10", "sample_density": 0.93, "max_displacement": 60, "base_darkness": 0.53, "blend_radius": 0},
     {"type": "sample_splatting", "intensity": "random_hard_11", "sample_density": 0.39, "max_displacement": 70, "base_darkness": 0.46, "blend_radius": 0},
-    
+    {"type": "sample_splatting", "intensity": "random_hard_12", "sample_density": 0.72, "max_displacement": 80, "base_darkness": 0.55, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "random_hard_13", "sample_density": 0.84, "max_displacement": 90, "base_darkness": 0.6, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "random_hard_14", "sample_density": 0.66, "max_displacement": 85, "base_darkness": 0.58, "blend_radius": 0},
+    {"type": "sample_splatting", "intensity": "random_hard_15", "sample_density": 0.58, "max_displacement": 95, "base_darkness": 0.62, "blend_radius": 0},
     
     {"type": "poisson", "intensity": "low", "scale": 30.0, "whole_image": True},
     {"type": "poisson", "intensity": "medium", "scale": 15.0, "whole_image": True},
