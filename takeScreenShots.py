@@ -108,8 +108,119 @@ def dump_screenshots():
         if len(failed_files) > 10:
             print(f"... and {len(failed_files) - 10} more")
 
-      
+def process_for_training(image_dir_paths:  list[Path], save_path: Path):
+    # for noise images resize to 800x600 and save both versions and crete low_res.png, low_res_luminance.png, high_res.png, high_res_luminance.png
+    # for screenshot images low res version resize low res from 800x600 to 400x300  and back to 800x600 -> low_res.png and low_res_luminance.png
+    # for screenshot images high res version resize high res from 1200x900 to 800x600 ->  high_res.png and high_res_luminance.png
+    for image_dir in image_dir_paths:
+        metadata_path = image_dir / "metadata.json"
+        if not metadata_path.exists():
+            print(f"Metadata file not found in {image_dir}, skipping.")
+            continue
+        
+        with open(metadata_path, 'r') as f:
+            metadata = json.load(f)
+        
+        noise_type = metadata.get("noise_config", {}).get("type", "")
+        
+        low_res_path = image_dir / "low_res.png"
+        high_res_path = image_dir / "high_res.png"
+        
+        if noise_type == "screenshot":
+            # Process low res for screenshot
+            with Image.open(low_res_path) as img:
+                low_res_down = img.resize((400, 300), Image.LANCZOS)
+                low_res_up = low_res_down.resize((800, 600), Image.LANCZOS)
+                low_res_up.save(save_path / image_dir.name / "low_res.png")
+                
+                luminance = low_res_up.convert("L")
+                luminance.save(save_path / image_dir.name / "low_res_luminance.png")
+            
+            # Process high res for screenshot
+            with Image.open(high_res_path) as img:
+                high_res_down = img.resize((800, 600), Image.LANCZOS)
+                high_res_down.save(save_path / image_dir.name / "high_res.png")
+                
+                luminance = high_res_down.convert("L")
+                luminance.save(save_path / image_dir.name / "high_res_luminance.png")
+        
+        else:
+            # Process noise images
+            with Image.open(low_res_path) as img:
+                low_res_img = img.resize((800, 600), Image.LANCZOS)
+                low_res_img.save(save_path / image_dir.name  / "low_res.png")
+                
+                luminance = low_res_img.convert("L")
+                luminance.save(save_path / image_dir.name / "low_res_luminance.png")
+            
+            with Image.open(high_res_path) as img:
+                high_res_img = img.resize((800, 600), Image.LANCZOS)
+                high_res_img.save(save_path / image_dir.name / "high_res.png")
+                
+                luminance = high_res_img.convert("L")
+                luminance.save(save_path / image_dir.name / "high_res_luminance.png")
+
+def process_for_training_multiprocessing(image_dir_paths:  list[Path], save_path: Path):
+    from concurrent.futures import ProcessPoolExecutor
+    import multiprocessing
+
+    checkpoint_file = Path("processing_checkpoint.json")
+    processed_dirs = set()
+    
+    if checkpoint_file.exists():
+        with open(checkpoint_file, 'r') as f:
+            checkpoint_data = json.load(f)
+            processed_dirs = set(checkpoint_data.get("processed_dirs", []))
+        print(f"Resuming: Found {len(processed_dirs)} already processed directories")
+    
+    dirs_to_process = [d for d in image_dir_paths if d.name not in processed_dirs]
+    print(f"Total directories: {len(image_dir_paths)}")
+    print(f"Already processed: {len(processed_dirs)}")
+    print(f"Remaining to process: {len(dirs_to_process)}")
+
+    max_workers = max(1, int(multiprocessing.cpu_count() * 0.5))
+    print(f"Using {max_workers} workers for processing.\n")
+
+    batch_size = 2048
+    total_dirs = len(dirs_to_process)
+    
+    for start_idx in range(0, total_dirs, batch_size):
+        end_idx = min(start_idx + batch_size, total_dirs)
+        batch_dirs = dirs_to_process[start_idx:end_idx]
+        print(f"Processing batch {start_idx // batch_size + 1}: Directories {start_idx} to {end_idx - 1} of {total_dirs}")
+
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            futures = {}
+            for image_dir in batch_dirs:
+                future = executor.submit(process_for_training, [image_dir], save_path)
+                futures[future] = image_dir
+            
+            for future in futures:
+                try:
+                    future.result()
+                    processed_dirs.add(futures[future].name)
+                except Exception as e:
+                    print(f"Error processing directory {futures[future].name}: {e}")
+        
+        with open(checkpoint_file, 'w') as f:
+            json.dump({"processed_dirs": list(processed_dirs)}, f)
+        print(f"Checkpoint saved: {len(processed_dirs)} directories processed\n")
+    
+    print(f"\nProcessing complete! Total processed: {len(processed_dirs)}")
 
 if __name__ == "__main__":
-    dump_screenshots()
+    # dump_screenshots()
+    
+    source_path = Path("/media/user/2TB/imageData")
+    save_path = Path("/media/user/2TB Clear/imageData")
+    save_path.mkdir(parents=True, exist_ok=True)
+    
+    all_dirs = sorted([d for d in source_path.iterdir() if d.is_dir() and d.name.startswith('image_')])
+    print(f"Found {len(all_dirs)} image directories to process")
+    
+    process_for_training_multiprocessing(
+        image_dir_paths=all_dirs,
+        save_path=save_path
+    )
     # take_screenshots()
+
