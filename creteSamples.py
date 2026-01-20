@@ -520,8 +520,10 @@ def process_image_sync(image_data, image_index, save_path, configs):
         image_folder = Path(save_path) / f"image_{image_index:08d}"
         image_folder.mkdir(parents=True, exist_ok=True)
         
-        high_res_path = image_folder / "high_res.png"
-        high_res.save(high_res_path, quality=95, compress_level=1)
+        high_res_resized = high_res.resize((IMAGE_WIDTH_LOW_RES, IMAGE_HEIGHT_LOW_RES), Image.Resampling.LANCZOS)
+        high_res_resized.save(image_folder / "high_res.png", quality=95, compress_level=1)
+        high_res_luminance = high_res_resized.convert("L")
+        high_res_luminance.save(image_folder / "high_res_luminance.png", quality=95, compress_level=1)
         
         low_res = high_res.resize((IMAGE_WIDTH_LOW_RES, IMAGE_HEIGHT_LOW_RES), Image.Resampling.LANCZOS)
         
@@ -539,8 +541,9 @@ def process_image_sync(image_data, image_index, save_path, configs):
         noisy_low_res = apply_noise(low_res_np, noise_config, num_applications)
         
         low_res_noisy = Image.fromarray(noisy_low_res)
-        low_res_path = image_folder / "low_res.png"
-        low_res_noisy.save(low_res_path, quality=95, compress_level=1)
+        low_res_noisy.save(image_folder / "low_res.png", quality=95, compress_level=1)
+        low_res_luminance = low_res_noisy.convert("L")
+        low_res_luminance.save(image_folder / "low_res_luminance.png", quality=95, compress_level=1)
         
         metadata = {
             "noise_config": noise_config,

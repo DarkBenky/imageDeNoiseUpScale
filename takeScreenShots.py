@@ -44,11 +44,11 @@ def take_screenshots():
     except KeyboardInterrupt:
         print(f"\nStopped. Total captures: {screenshot_count}")
 
-DAMP_PATH = "/media/user/2TB/imageData"
+DAMP_PATH = "/media/user/2TB Clear/imageData"
 IMAGE_WIDTH_LOW_RES = 800
 IMAGE_HEIGHT_LOW_RES = 600
-IMAGE_WIDTH_HIGH_RES = int(800 * 1.5)
-IMAGE_HEIGHT_HIGH_RES = int(600 * 1.5)
+IMAGE_WIDTH_HIGH_RES = IMAGE_HEIGHT_LOW_RES
+IMAGE_HEIGHT_HIGH_RES = IMAGE_WIDTH_LOW_RES
 
 def dump_screenshots():
     src_path = Path(SAVE_DIRECTORY)
@@ -64,20 +64,28 @@ def dump_screenshots():
     for i, screenshot in enumerate(screenshots, start=1):
         try:
             with Image.open(screenshot) as img:
-                low_res_img = img.resize((IMAGE_WIDTH_LOW_RES, IMAGE_HEIGHT_LOW_RES), Image.LANCZOS)
-                high_res_img = img.resize((IMAGE_WIDTH_HIGH_RES, IMAGE_HEIGHT_HIGH_RES), Image.LANCZOS)
+                high_res_img = img.resize((IMAGE_WIDTH_LOW_RES, IMAGE_HEIGHT_LOW_RES), Image.LANCZOS)
+                high_res_luminance = high_res_img.convert("L")
+                
+                low_res_down = img.resize((400, 300), Image.LANCZOS)
+                low_res_img = low_res_down.resize((IMAGE_WIDTH_LOW_RES, IMAGE_HEIGHT_LOW_RES), Image.LANCZOS)
+                low_res_luminance = low_res_img.convert("L")
+                
                 random_string = ''.join(random.choices(string.ascii_uppercase + string.ascii_lowercase + string.digits, k=6))
 
                 folder_name = f"image_screenShot_{random_string}_{i:08d}"
                 folder_path = dst_path / folder_name
                 folder_path.mkdir(parents=True, exist_ok=True)
+                
                 low_res_img.save(folder_path / "low_res.png")
+                low_res_luminance.save(folder_path / "low_res_luminance.png")
                 high_res_img.save(folder_path / "high_res.png")
+                high_res_luminance.save(folder_path / "high_res_luminance.png")
                 
                 metadata = {
                     "noise_config": {"type": "screenshot", "source": "screen_capture"},
                     "num_applications": 0,
-                    "high_res_size": [IMAGE_WIDTH_HIGH_RES, IMAGE_HEIGHT_HIGH_RES],
+                    "high_res_size": [IMAGE_WIDTH_LOW_RES, IMAGE_HEIGHT_LOW_RES],
                     "low_res_size": [IMAGE_WIDTH_LOW_RES, IMAGE_HEIGHT_LOW_RES]
                 }
                 with open(folder_path / "metadata.json", 'w') as f:
@@ -110,55 +118,59 @@ def dump_screenshots():
 
 def process_for_training(image_dir_paths:  list[Path], save_path: Path):
     for image_dir in image_dir_paths:
-        metadata_path = image_dir / "metadata.json"
-        if not metadata_path.exists():
-            continue
-        
-        with open(metadata_path, 'r') as f:
-            metadata = json.load(f)
-        
-        noise_type = metadata.get("noise_config", {}).get("type", "")
-        
-        low_res_path = image_dir / "low_res.png"
-        high_res_path = image_dir / "high_res.png"
-        
-        if not low_res_path.exists() or not high_res_path.exists():
-            continue
-        
-        random_string = ''.join(random.choices(string.ascii_uppercase + string.ascii_lowercase + string.digits, k=8))
-        output_dir = save_path / f"sample_{random_string}"
-        output_dir.mkdir(parents=True, exist_ok=True)
-        
-        if noise_type == "screenshot":
-            with Image.open(low_res_path) as img:
-                low_res_down = img.resize((400, 300), Image.LANCZOS)
-                low_res_up = low_res_down.resize((800, 600), Image.LANCZOS)
-                low_res_up.save(output_dir / "low_res.png")
-                
-                luminance = low_res_up.convert("L")
-                luminance.save(output_dir / "low_res_luminance.png")
+        try:
+            metadata_path = image_dir / "metadata.json"
+            if not metadata_path.exists():
+                continue
             
-            with Image.open(high_res_path) as img:
-                high_res_down = img.resize((800, 600), Image.LANCZOS)
-                high_res_down.save(output_dir / "high_res.png")
-                
-                luminance = high_res_down.convert("L")
-                luminance.save(output_dir / "high_res_luminance.png")
-        
-        else:
-            with Image.open(low_res_path) as img:
-                low_res_img = img.resize((800, 600), Image.LANCZOS)
-                low_res_img.save(output_dir / "low_res.png")
-                
-                luminance = low_res_img.convert("L")
-                luminance.save(output_dir / "low_res_luminance.png")
+            with open(metadata_path, 'r') as f:
+                metadata = json.load(f)
             
-            with Image.open(high_res_path) as img:
-                high_res_img = img.resize((800, 600), Image.LANCZOS)
-                high_res_img.save(output_dir / "high_res.png")
+            noise_type = metadata.get("noise_config", {}).get("type", "")
+            
+            low_res_path = image_dir / "low_res.png"
+            high_res_path = image_dir / "high_res.png"
+            
+            if not low_res_path.exists() or not high_res_path.exists():
+                continue
+            
+            random_string = ''.join(random.choices(string.ascii_uppercase + string.ascii_lowercase + string.digits, k=8))
+            output_dir = save_path / f"sample_{random_string}"
+            output_dir.mkdir(parents=True, exist_ok=True)
+            
+            if noise_type == "screenshot":
+                with Image.open(low_res_path) as img:
+                    low_res_down = img.resize((400, 300), Image.LANCZOS)
+                    low_res_up = low_res_down.resize((800, 600), Image.LANCZOS)
+                    low_res_up.save(output_dir / "low_res.png")
+                    
+                    luminance = low_res_up.convert("L")
+                    luminance.save(output_dir / "low_res_luminance.png")
                 
-                luminance = high_res_img.convert("L")
-                luminance.save(output_dir / "high_res_luminance.png")
+                with Image.open(high_res_path) as img:
+                    high_res_down = img.resize((800, 600), Image.LANCZOS)
+                    high_res_down.save(output_dir / "high_res.png")
+                    
+                    luminance = high_res_down.convert("L")
+                    luminance.save(output_dir / "high_res_luminance.png")
+            
+            else:
+                with Image.open(low_res_path) as img:
+                    low_res_img = img.resize((800, 600), Image.LANCZOS)
+                    low_res_img.save(output_dir / "low_res.png")
+                    
+                    luminance = low_res_img.convert("L")
+                    luminance.save(output_dir / "low_res_luminance.png")
+                
+                with Image.open(high_res_path) as img:
+                    high_res_img = img.resize((800, 600), Image.LANCZOS)
+                    high_res_img.save(output_dir / "high_res.png")
+                    
+                    luminance = high_res_img.convert("L")
+                    luminance.save(output_dir / "high_res_luminance.png")
+        
+        except Exception:
+            continue
 
 def process_for_training_multiprocessing(image_dir_paths:  list[Path], save_path: Path):
     from concurrent.futures import ProcessPoolExecutor
@@ -209,18 +221,18 @@ def process_for_training_multiprocessing(image_dir_paths:  list[Path], save_path
     print(f"\nProcessing complete! Total processed: {len(processed_dirs)}")
 
 if __name__ == "__main__":
-    # dump_screenshots()
+    dump_screenshots()
     
-    source_path = Path("/media/user/2TB/imageData")
-    save_path = Path("/media/user/2TB Clear/imageData")
-    save_path.mkdir(parents=True, exist_ok=True)
+    # source_path = Path("/media/user/2TB/imageData")
+    # save_path = Path("/media/user/2TB Clear/imageData")
+    # save_path.mkdir(parents=True, exist_ok=True)
     
-    all_dirs = sorted([d for d in source_path.iterdir() if d.is_dir() and d.name.startswith('image_')])
-    print(f"Found {len(all_dirs)} image directories to process")
+    # all_dirs = sorted([d for d in source_path.iterdir() if d.is_dir() and d.name.startswith('image_')])
+    # print(f"Found {len(all_dirs)} image directories to process")
     
-    process_for_training_multiprocessing(
-        image_dir_paths=all_dirs,
-        save_path=save_path
-    )
+    # process_for_training_multiprocessing(
+    #     image_dir_paths=all_dirs,
+    #     save_path=save_path
+    # )
     # take_screenshots()
 
