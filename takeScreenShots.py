@@ -2,10 +2,11 @@ import time
 from datetime import datetime
 from pathlib import Path
 from mss import mss
-from PIL import Image
+from PIL import Image, ImageFilter
 import random
 import string
 import json
+import numpy as np
 
 SAVE_DIRECTORY = "/home/user/Desktop/screenshots"
 SCREENSHOT_INTERVAL = 1
@@ -50,6 +51,41 @@ IMAGE_HEIGHT_LOW_RES = 600
 IMAGE_WIDTH_HIGH_RES = IMAGE_HEIGHT_LOW_RES
 IMAGE_HEIGHT_HIGH_RES = IMAGE_WIDTH_LOW_RES
 
+def pixel_jitter(img, max_shift=1):
+    arr = np.asarray(img)
+    h, w, _ = arr.shape
+
+    dx = np.random.randint(-max_shift, max_shift + 1, size=(h, w))
+    dy = np.random.randint(-max_shift, max_shift + 1, size=(h, w))
+
+    yy, xx = np.meshgrid(np.arange(h), np.arange(w), indexing="ij")
+    xx = np.clip(xx + dx, 0, w - 1)
+    yy = np.clip(yy + dy, 0, h - 1)
+
+    return Image.fromarray(arr[yy, xx])
+
+def ray_tracing_noise(img, strength=0.15, chroma=0.6):
+    arr = np.asarray(img).astype(np.float32) / 255.0
+
+    # luminance (used to scale noise like Monte Carlo variance)
+    lum = (
+        0.2126 * arr[..., 0] +
+        0.7152 * arr[..., 1] +
+        0.0722 * arr[..., 2]
+    )
+
+    # noise grows with brightness (key ray tracing trait)
+    noise = np.random.normal(0, strength, arr.shape)
+    noise *= lum[..., None]
+
+    # extra chromatic speckle
+    chroma_noise = np.random.normal(0, strength * chroma, arr.shape)
+
+    out = arr + noise + chroma_noise
+    out = np.clip(out, 0.0, 1.0)
+
+    return Image.fromarray((out * 255).astype(np.uint8))
+
 def dump_screenshots():
     src_path = Path(SAVE_DIRECTORY)
     dst_path = Path(DAMP_PATH)
@@ -69,6 +105,33 @@ def dump_screenshots():
                 
                 low_res_down = img.resize((400, 300), Image.LANCZOS)
                 low_res_img = low_res_down.resize((IMAGE_WIDTH_LOW_RES, IMAGE_HEIGHT_LOW_RES), Image.LANCZOS)
+                # add noise or other destruction
+                modifications = ["quantize", "noise", "blur", 'compression', 'rayTracingNoise', 'pixelJitter']
+                option = random.choice(modifications)
+                if option == "quantize":
+                    low_res_img = low_res_img.quantize(colors=random.randint(8, 256), method=Image.FASTOCTREE)
+                elif option == "noise":
+                    sigma = random.uniform(5, 30)
+                    noise = Image.effect_noise(low_res_img.size, sigma)
+                    low_res_img = Image.blend(low_res_img, noise.convert("RGB"), 0.5)
+                elif option == "blur":
+                    radius = random.uniform(1, 5)
+                    low_res_img = low_res_img.filter(ImageFilter.GaussianBlur(radius))
+                elif option == "compression":
+                    from io import BytesIO
+                    buffer = BytesIO()
+                    quality = random.randint(10, 50)
+                    low_res_img.save(buffer, format="JPEG", quality=quality)
+                    buffer.seek(0)
+                    low_res_img = Image.open(buffer).convert("RGB")
+                elif option == "rayTracingNoise":
+                    strength = random.uniform(0.1, 0.3)
+                    chroma = random.uniform(0.4, 0.8)
+                    low_res_img = ray_tracing_noise(low_res_img, strength=strength, chroma=chroma)
+                elif option == "pixelJitter":
+                    offset = random.randint(1, 12)
+                    low_res_img = pixel_jitter(low_res_img, max_shift=offset)
+
                 low_res_luminance = low_res_img.convert("L")
                 
                 random_string = ''.join(random.choices(string.ascii_uppercase + string.ascii_lowercase + string.digits, k=6))
@@ -83,7 +146,7 @@ def dump_screenshots():
                 high_res_luminance.save(folder_path / "high_res_luminance.png")
                 
                 metadata = {
-                    "noise_config": {"type": "screenshot", "source": "screen_capture"},
+                    "noise_config": {"type": "screenshot", "source": "screen_capture", "modification": option},
                     "num_applications": 0,
                     "high_res_size": [IMAGE_WIDTH_LOW_RES, IMAGE_HEIGHT_LOW_RES],
                     "low_res_size": [IMAGE_WIDTH_LOW_RES, IMAGE_HEIGHT_LOW_RES]

@@ -14,17 +14,18 @@ import torchvision.transforms as transforms
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 import multiprocessing
 
-SAVE_PATH = "/media/user/2TB/imageData"
+# SAVE_PATH = "/media/user/2TB/imageData"
+SAVE_PATH = "/media/user/2TB Clear/imageData"
 # SAVE_PATH = "/media/user/128GB"
-SAVE_PERIOD = 256
+SAVE_PERIOD = 1024
 IMAGE_WIDTH_LOW_RES = 800
 IMAGE_HEIGHT_LOW_RES = 600
-IMAGE_WIDTH_HIGH_RES = int(800 * 1.5)
-IMAGE_HEIGHT_HIGH_RES = int(600 * 1.5)
+IMAGE_WIDTH_HIGH_RES = 800
+IMAGE_HEIGHT_HIGH_RES = 600
 
 MAX_CONCURRENT_DOWNLOADS = 256
 DOWNLOAD_TIMEOUT = 3
-MAX_PROCESSING_WORKERS = int(multiprocessing.cpu_count() * 0.25)
+MAX_PROCESSING_WORKERS = int(multiprocessing.cpu_count() * 0.75)
 
 MAX_NOISE_APPLICATIONS = 5
 
@@ -521,9 +522,9 @@ def process_image_sync(image_data, image_index, save_path, configs):
         image_folder.mkdir(parents=True, exist_ok=True)
         
         high_res_resized = high_res.resize((IMAGE_WIDTH_LOW_RES, IMAGE_HEIGHT_LOW_RES), Image.Resampling.LANCZOS)
-        high_res_resized.save(image_folder / "high_res.png", quality=95, compress_level=1)
+        high_res_resized.save(image_folder / "high_res.png", quality=100, compress_level=1)
         high_res_luminance = high_res_resized.convert("L")
-        high_res_luminance.save(image_folder / "high_res_luminance.png", quality=95, compress_level=1)
+        high_res_luminance.save(image_folder / "high_res_luminance.png", quality=100, compress_level=1)
         
         low_res = high_res.resize((IMAGE_WIDTH_LOW_RES, IMAGE_HEIGHT_LOW_RES), Image.Resampling.LANCZOS)
         
@@ -541,9 +542,9 @@ def process_image_sync(image_data, image_index, save_path, configs):
         noisy_low_res = apply_noise(low_res_np, noise_config, num_applications)
         
         low_res_noisy = Image.fromarray(noisy_low_res)
-        low_res_noisy.save(image_folder / "low_res.png", quality=95, compress_level=1)
+        low_res_noisy.save(image_folder / "low_res.png", quality=70, compress_level=1)
         low_res_luminance = low_res_noisy.convert("L")
-        low_res_luminance.save(image_folder / "low_res_luminance.png", quality=95, compress_level=1)
+        low_res_luminance.save(image_folder / "low_res_luminance.png", quality=70, compress_level=1)
         
         metadata = {
             "noise_config": noise_config,
