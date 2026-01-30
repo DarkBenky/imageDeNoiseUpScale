@@ -103,34 +103,36 @@ def dump_screenshots():
                 high_res_img = img.resize((IMAGE_WIDTH_LOW_RES, IMAGE_HEIGHT_LOW_RES), Image.LANCZOS)
                 high_res_luminance = high_res_img.convert("L")
                 
-                low_res_down = img.resize((400, 300), Image.LANCZOS)
+                downScale_factor = random.uniform(0.5, 1.0)
+                low_res_down = img.resize((int(IMAGE_WIDTH_LOW_RES * downScale_factor), int(IMAGE_HEIGHT_LOW_RES * downScale_factor)), Image.LANCZOS)
                 low_res_img = low_res_down.resize((IMAGE_WIDTH_LOW_RES, IMAGE_HEIGHT_LOW_RES), Image.LANCZOS)
-                # add noise or other destruction
-                modifications = ["quantize", "noise", "blur", 'compression', 'rayTracingNoise', 'pixelJitter']
-                option = random.choice(modifications)
-                if option == "quantize":
-                    low_res_img = low_res_img.quantize(colors=random.randint(8, 256), method=Image.FASTOCTREE)
-                elif option == "noise":
-                    sigma = random.uniform(5, 30)
-                    noise = Image.effect_noise(low_res_img.size, sigma)
-                    low_res_img = Image.blend(low_res_img, noise.convert("RGB"), 0.5)
-                elif option == "blur":
-                    radius = random.uniform(1, 5)
-                    low_res_img = low_res_img.filter(ImageFilter.GaussianBlur(radius))
-                elif option == "compression":
-                    from io import BytesIO
-                    buffer = BytesIO()
-                    quality = random.randint(10, 50)
-                    low_res_img.save(buffer, format="JPEG", quality=quality)
-                    buffer.seek(0)
-                    low_res_img = Image.open(buffer).convert("RGB")
-                elif option == "rayTracingNoise":
-                    strength = random.uniform(0.1, 0.3)
-                    chroma = random.uniform(0.4, 0.8)
-                    low_res_img = ray_tracing_noise(low_res_img, strength=strength, chroma=chroma)
-                elif option == "pixelJitter":
-                    offset = random.randint(1, 12)
-                    low_res_img = pixel_jitter(low_res_img, max_shift=offset)
+                
+                for _ in range(random.randint(0, 3)):
+                    modifications = ["quantize", "noise", "blur", 'compression', 'rayTracingNoise', 'pixelJitter']
+                    option = random.choice(modifications)
+                    if option == "quantize":
+                        low_res_img = low_res_img.quantize(colors=random.randint(8, 256), method=Image.FASTOCTREE).convert("RGB")
+                    elif option == "noise":
+                        sigma = random.uniform(5, 30)
+                        noise = Image.effect_noise(low_res_img.size, sigma)
+                        low_res_img = Image.blend(low_res_img, noise.convert("RGB"), 0.5)
+                    elif option == "blur":
+                        radius = random.uniform(1, 5)
+                        low_res_img = low_res_img.filter(ImageFilter.GaussianBlur(radius))
+                    elif option == "compression":
+                        from io import BytesIO
+                        buffer = BytesIO()
+                        quality = random.randint(10, 50)
+                        low_res_img.save(buffer, format="JPEG", quality=quality)
+                        buffer.seek(0)
+                        low_res_img = Image.open(buffer).convert("RGB")
+                    elif option == "rayTracingNoise":
+                        strength = random.uniform(0.1, 0.3)
+                        chroma = random.uniform(0.4, 0.8)
+                        low_res_img = ray_tracing_noise(low_res_img, strength=strength, chroma=chroma)
+                    elif option == "pixelJitter":
+                        offset = random.randint(1, 12)
+                        low_res_img = pixel_jitter(low_res_img, max_shift=offset)
 
                 low_res_luminance = low_res_img.convert("L")
                 
