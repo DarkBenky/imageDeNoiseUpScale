@@ -14,8 +14,15 @@ import torchvision.transforms as transforms
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 import multiprocessing
 
+def randomize_config_value(value, min_factor=0.5, max_factor=1.5):
+    """Randomize a config value within a range (default ±50%)"""
+    if isinstance(value, (int, float)) and value != 0:
+        return value * np.random.uniform(min_factor, max_factor)
+    return value
+
 # SAVE_PATH = "/media/user/2TB/imageData"
-SAVE_PATH = "/media/user/2TB Clear/imageData"
+# SAVE_PATH = "/media/user/2TB Clear/imageData"
+SAVE_PATH = "/media/user/HDD 1TB/Data"
 # SAVE_PATH = "/media/user/128GB"
 SAVE_PERIOD = 1024
 IMAGE_WIDTH_LOW_RES = 800
@@ -231,7 +238,28 @@ RAY_TRACING_NOISE_CONFIGS = [
     {"type": "poisson", "intensity": "high", "scale": 7.0, "whole_image": True},
     {"type": "poisson", "intensity": "localized_low", "scale": 25.0, "whole_image": False, "coverage": 0.3},
     {"type": "poisson", "intensity": "localized_medium", "scale": 12.0, "whole_image": False, "coverage": 0.4},
-    {"type": "poisson", "intensity": "localized_high", "scale": 5.0, "whole_image": False, "coverage": 0.5}
+    {"type": "poisson", "intensity": "localized_high", "scale": 5.0, "whole_image": False, "coverage": 0.5},
+
+    {"type": "speckle", "intensity": "low", "sigma": 0.1, "whole_image": True},
+    {"type": "speckle", "intensity": "medium", "sigma": 0.2, "whole_image": True},
+    {"type": "speckle", "intensity": "high", "sigma": 0.3, "whole_image": True},
+    {"type": "speckle", "intensity": "localized_low", "sigma": 0.15, "whole_image": False, "coverage": 0.3},
+    {"type": "speckle", "intensity": "localized_medium", "sigma": 0.25, "whole_image": False, "coverage": 0.4},
+    {"type": "speckle", "intensity": "localized_high", "sigma": 0.35, "whole_image": False, "coverage": 0.5},
+
+    {"type": "salt_pepper", "intensity": "low", "amount": 0.01, "whole_image": True},
+    {"type": "salt_pepper", "intensity": "medium", "amount": 0.03, "whole_image": True},
+    {"type": "salt_pepper", "intensity": "high", "amount": 0.05, "whole_image": True},
+    {"type": "salt_pepper", "intensity": "localized_low", "amount": 0.02, "whole_image": False, "coverage": 0.3},
+    {"type": "salt_pepper", "intensity": "localized_medium", "amount": 0.04, "whole_image": False, "coverage": 0.4},
+    {"type": "salt_pepper", "intensity": "localized_high", "amount": 0.06, "whole_image": False, "coverage": 0.5},
+
+    {"type": "gaussian", "intensity": "low", "sigma": 10, "whole_image": True},
+    {"type": "gaussian", "intensity": "medium", "sigma": 25, "whole_image": True},
+    {"type": "gaussian", "intensity": "high", "sigma": 50, "whole_image": True},
+    {"type": "gaussian", "intensity": "localized_low", "sigma": 15, "whole_image": False, "coverage": 0.3},
+    {"type": "gaussian", "intensity": "localized_medium", "sigma": 30, "whole_image": False, "coverage": 0.4},
+    {"type": "gaussian", "intensity": "localized_high", "sigma": 60, "whole_image": False, "coverage": 0.5},
 ]
 
 
@@ -331,10 +359,10 @@ def apply_sample_splatting_noise(image, config):
     """
     h, w = image.shape[:2]
     
-    sample_density = config.get("sample_density", 0.3)
-    max_displacement = config.get("max_displacement", 5)
-    base_darkness = config.get("base_darkness", 0.2)
-    blend_radius = config.get("blend_radius", 1)
+    sample_density = randomize_config_value(config.get("sample_density", 0.3))
+    max_displacement = randomize_config_value(config.get("max_displacement", 5))
+    base_darkness = randomize_config_value(config.get("base_darkness", 0.2))
+    blend_radius = int(randomize_config_value(config.get("blend_radius", 1)))
     
     canvas = np.ones_like(image, dtype=np.float32) * (image.mean() * base_darkness)
     sample_counts = np.zeros((h, w), dtype=np.float32)
@@ -385,10 +413,8 @@ def apply_ray_tracing_noise(image, config):
     noisy = image.copy().astype(np.float32)
     h, w = image.shape[:2]
     
-    # Base Poisson noise layer (primary ray tracing noise)
-    base_scale = config.get("base_scale", 0.3)
+    base_scale = randomize_config_value(config.get("base_scale", 0.3))
     if config.get("color_variance", False):
-        # Apply different noise levels to each color channel
         for c in range(3):
             channel_scale = base_scale * np.random.uniform(0.8, 1.2)
             scaled = noisy[:, :, c] * channel_scale
@@ -397,14 +423,14 @@ def apply_ray_tracing_noise(image, config):
         scaled = noisy * base_scale
         noisy = np.random.poisson(scaled) / base_scale
     
-    # Add Gaussian layer (represents variance from Monte Carlo integration)
-    gaussian_sigma = config.get("gaussian_layer", 0.03)
+    gaussian_sigma = randomize_config_value(config.get("gaussian_layer", 0.03))
     gaussian_noise = np.random.normal(0, gaussian_sigma, image.shape)
     noisy = noisy + gaussian_noise * 255.0
     
-    # Add localized noisy regions (difficult to sample areas in ray tracing)
-    num_noisy_regions = config.get("num_noisy_regions", 3)
+    num_noisy_regions = int(randomize_config_value(config.get("num_noisy_regions", 3)))
     difficult_scale = config.get("difficult_scale", None)
+    if difficult_scale is not None:
+        difficult_scale = randomize_config_value(difficult_scale)
     
     for _ in range(num_noisy_regions):
         # Random region size and position
@@ -465,30 +491,41 @@ def apply_noise(image, config, num_applications=1):
         noisy = image.copy()
         
         if base_noise == "gaussian":
-            noisy = add_gaussian_noise(noisy, config["whole_sigma"], whole_image=True)
-            noisy = add_gaussian_noise(noisy, config["local_sigma"], whole_image=False, coverage=coverage)
+            whole_sigma = randomize_config_value(config["whole_sigma"])
+            local_sigma = randomize_config_value(config["local_sigma"])
+            noisy = add_gaussian_noise(noisy, whole_sigma, whole_image=True)
+            noisy = add_gaussian_noise(noisy, local_sigma, whole_image=False, coverage=coverage)
         elif base_noise == "salt_pepper":
-            noisy = add_salt_pepper_noise(noisy, config["whole_amount"], whole_image=True)
-            noisy = add_salt_pepper_noise(noisy, config["local_amount"], whole_image=False, coverage=coverage)
+            whole_amount = randomize_config_value(config["whole_amount"])
+            local_amount = randomize_config_value(config["local_amount"])
+            noisy = add_salt_pepper_noise(noisy, whole_amount, whole_image=True)
+            noisy = add_salt_pepper_noise(noisy, local_amount, whole_image=False, coverage=coverage)
         elif base_noise == "speckle":
-            noisy = add_speckle_noise(noisy, config["whole_sigma"], whole_image=True)
-            noisy = add_speckle_noise(noisy, config["local_sigma"], whole_image=False, coverage=coverage)
+            whole_sigma = randomize_config_value(config["whole_sigma"])
+            local_sigma = randomize_config_value(config["local_sigma"])
+            noisy = add_speckle_noise(noisy, whole_sigma, whole_image=True)
+            noisy = add_speckle_noise(noisy, local_sigma, whole_image=False, coverage=coverage)
         elif base_noise == "poisson":
-            noisy = add_poisson_noise(noisy, whole_image=True, scale=config["whole_scale"])
-            noisy = add_poisson_noise(noisy, whole_image=False, scale=config["local_scale"], coverage=coverage)
+            whole_scale = randomize_config_value(config["whole_scale"])
+            local_scale = randomize_config_value(config["local_scale"])
+            noisy = add_poisson_noise(noisy, whole_image=True, scale=whole_scale)
+            noisy = add_poisson_noise(noisy, whole_image=False, scale=local_scale, coverage=coverage)
         
         return noisy
     
     noisy = image.copy()
     for _ in range(num_applications):
         if noise_type == "gaussian":
-            noisy = add_gaussian_noise(noisy, config["sigma"], whole_image, coverage)
+            sigma = randomize_config_value(config["sigma"])
+            noisy = add_gaussian_noise(noisy, sigma, whole_image, coverage)
         elif noise_type == "salt_pepper":
-            noisy = add_salt_pepper_noise(noisy, config["amount"], whole_image, coverage)
+            amount = randomize_config_value(config["amount"])
+            noisy = add_salt_pepper_noise(noisy, amount, whole_image, coverage)
         elif noise_type == "speckle":
-            noisy = add_speckle_noise(noisy, config["sigma"], whole_image, coverage)
+            sigma = randomize_config_value(config["sigma"])
+            noisy = add_speckle_noise(noisy, sigma, whole_image, coverage)
         elif noise_type == "poisson":
-            scale = config.get("scale", 1.0)
+            scale = randomize_config_value(config.get("scale", 1.0))
             noisy = add_poisson_noise(noisy, whole_image, scale, coverage)
     
     return noisy

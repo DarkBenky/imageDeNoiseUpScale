@@ -286,7 +286,7 @@ def process_for_training_multiprocessing(image_dir_paths:  list[Path], save_path
     print(f"\nProcessing complete! Total processed: {len(processed_dirs)}")
 
 if __name__ == "__main__":
-    dump_screenshots()
+    # dump_screenshots()
     
     # source_path = Path("/media/user/2TB/imageData")
     # save_path = Path("/media/user/2TB Clear/imageData")
@@ -299,5 +299,5 @@ if __name__ == "__main__":
     #     image_dir_paths=all_dirs,
     #     save_path=save_path
     # )
-    # take_screenshots()
+    take_screenshots()
 
